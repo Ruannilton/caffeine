@@ -9,20 +9,19 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Set the include directories
 include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../core/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../collections/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../collections
+    ${CMAKE_CURRENT_SOURCE_DIR}/../core
     )
 
 # Add the source files
-file(GLOB SOURCES src/*.c)
+file(GLOB SOURCES *.c)
 
 # Create the static library
 add_library(ECSLib STATIC ${SOURCES})
 
 # Set the public headers
 set(PUBLIC_HEADERS 
-    include/ecs.h
+    ecs.h
 )
 
 

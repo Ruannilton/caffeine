@@ -6,6 +6,16 @@
         "caffeine_hashmap.h": "c",
         "caffeine_string.h": "c",
         "stdbool.h": "c",
-        "caffeine_iterator.h": "c"
+        "caffeine_iterator.h": "c",
+        "caffeine_platform.h": "c",
+        "xstring": "c",
+        "caffeine_memory.h": "c",
+        "initializer_list": "c",
+        "type_traits": "c",
+        "xutility": "c",
+        "caffeine_container_functions.h": "c",
+        "xmemory": "c",
+        "assert.h": "c",
+        "caffeine_types.h": "c"
     }
 }

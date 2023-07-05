@@ -7,23 +7,20 @@ set(CMAKE_C_STANDARD 11)
 # Set the output directory for the library
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Set the include directories
-include_directories(include)
-
 # Add the source files
-file(GLOB SOURCES src/*.c)
+file(GLOB SOURCES ./*.c)
 
 # Create the static library
 add_library(CoreLib STATIC ${SOURCES})
 
 # Set the public headers
 set(PUBLIC_HEADERS 
-    include/caffeine_algorithms.h
-    include/caffeine_core.h
-    include/caffeine_flags.h
-    include/caffeine_macros.h
-    include/caffeine_memory.h
-    include/caffeine_string.h
+    caffeine_algorithms.h
+    caffeine_core.h
+    caffeine_flags.h
+    caffeine_macros.h
+    caffeine_memory.h
+    caffeine_string.h
 )
 
 
