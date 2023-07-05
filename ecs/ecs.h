@@ -1,6 +1,6 @@
 #pragma once
 
-#include <caffeine_core.h>
+#include <caffeine_types.h>
 #include <caffeine_hashmap.h>
 #include <caffeine_string.h>
 #include <caffeine_vector.h>

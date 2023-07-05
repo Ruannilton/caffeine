@@ -18,12 +18,14 @@ static inline char _cff_char_to_upper(char c) {
   if (c >= 'a' && c <= 'z') {
     c = c - 32;
   }
+  return c;
 }
 
 static inline char _cff_char_to_lower(char c) {
   if (c >= 'A' && c <= 'Z') {
     c = c + 32;
   }
+  return c;
 }
 
 cff_string cff_string_create_literal(const char *str,
@@ -161,7 +163,7 @@ cff_string cff_string_join(cff_string *strs, char sep, uint64_t array_lenght,
 
   for (size_t i = 0; i < array_lenght; i++) {
     char *bff = strs[i].buffer;
-    while (*bff != NULL) {
+    while (*bff != '\0') {
       new_string.buffer[acc] = *bff;
       bff++;
       acc++;

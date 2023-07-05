@@ -256,22 +256,29 @@ cff_err_e cff_linked_list_remove(cff_linked_list_s *linked_list, uint64_t index,
   return CFF_ERR_NONE;
 }
 
+// TODO: handle errors
 cff_err_e cff_linked_list_destroy(cff_linked_list_s linked_list,
                                   cff_allocator_t allocator) {
   while (linked_list.buffer != 0) {
-    cff_linked_list_bucket *aux = (cff_linked_list_bucket *)linked_list.buffer;
-    linked_list.buffer = ((cff_linked_list_bucket *)linked_list.buffer)->next;
+    cff_linked_list_bucket *aux =
+        (cff_linked_list_bucket *)(linked_list.buffer);
+    linked_list.buffer =
+        (uintptr_t)(((cff_linked_list_bucket *)linked_list.buffer)->next);
     _free_bucket(aux, allocator);
     linked_list.count--;
   }
   linked_list = (cff_linked_list_s){0};
-}
 
+  return CFF_ERR_NONE;
+}
+// TODO: handle errors
 cff_err_e cff_linked_list_reserve(cff_linked_list_s *linked_list,
                                   uint64_t count, cff_allocator_t allocator) {
   while (linked_list->count < count) {
     cff_linked_list_push_back(linked_list, 0, allocator);
   }
+
+  return CFF_ERR_NONE;
 }
 
 cff_err_e cff_linked_list_push_back(cff_linked_list_s *linked_list,
@@ -297,7 +304,7 @@ cff_err_e cff_linked_list_pop_back(cff_linked_list_s *linked_list,
   if (linked_list->count == 0)
     return CFF_ERR_OUT_OF_BOUNDS;
   if (linked_list->count == 1) {
-    _free_bucket(linked_list->buffer, allocator);
+    _free_bucket((cff_linked_list_bucket *)(linked_list->buffer), allocator);
     linked_list->buffer = 0;
     linked_list->last = 0;
   }
@@ -315,7 +322,7 @@ cff_err_e cff_linked_list_push_front(cff_linked_list_s *linked_list,
                                      uintptr_t in, cff_allocator_t allocator) {
   cff_linked_list_bucket *bucket =
       _new_bucket(linked_list->data_size, in, allocator);
-  bucket->next = linked_list->buffer;
+  bucket->next = (cff_linked_list_bucket *)(linked_list->buffer);
   linked_list->buffer = (uintptr_t)bucket;
   linked_list->count++;
   return CFF_ERR_NONE;
@@ -326,8 +333,8 @@ cff_err_e cff_linked_list_pop_front(cff_linked_list_s *linked_list,
   if (linked_list->count == 0)
     return CFF_ERR_OUT_OF_BOUNDS;
 
-  cff_linked_list_bucket *aux = linked_list->buffer;
-  linked_list->buffer = aux->next;
+  cff_linked_list_bucket *aux = (cff_linked_list_bucket *)(linked_list->buffer);
+  linked_list->buffer = (uintptr_t)(aux->next);
   linked_list->count--;
 
   _free_bucket(aux, allocator);
@@ -345,8 +352,9 @@ bool cff_linked_list_equals(cff_linked_list_s linked_list,
   if (linked_list.count != other.count)
     return false;
 
-  cff_linked_list_bucket *aux_a = linked_list.buffer;
-  cff_linked_list_bucket *aux_b = other.buffer;
+  cff_linked_list_bucket *aux_a =
+      (cff_linked_list_bucket *)(linked_list.buffer);
+  cff_linked_list_bucket *aux_b = (cff_linked_list_bucket *)(other.buffer);
 
   while (aux_a != NULL && aux_b != NULL) {
     if (!_cmp_bucket(aux_a, aux_b, linked_list.data_size))
@@ -360,9 +368,10 @@ bool cff_linked_list_equals(cff_linked_list_s linked_list,
 }
 
 bool cff_linked_list_contains(cff_linked_list_s linked_list, uintptr_t value) {
-  cff_linked_list_bucket *aux_a = linked_list.buffer;
+  cff_linked_list_bucket *aux_a =
+      (cff_linked_list_bucket *)(linked_list.buffer);
   while (aux_a != NULL) {
-    if (cff_mem_cmp(value, aux_a, linked_list.data_size))
+    if (cff_mem_cmp((const void *const)value, aux_a, linked_list.data_size))
       return true;
     aux_a = aux_a->next;
   }
@@ -371,7 +380,8 @@ bool cff_linked_list_contains(cff_linked_list_s linked_list, uintptr_t value) {
 
 void cff_linked_list_fill(cff_linked_list_s linked_list, uintptr_t value,
                           cff_size value_size) {
-  cff_linked_list_bucket *aux_a = linked_list.buffer;
+  cff_linked_list_bucket *aux_a =
+      (cff_linked_list_bucket *)(linked_list.buffer);
   while (aux_a != NULL) {
     _set_bucket_data(aux_a, value_size, value);
     aux_a = aux_a->next;
@@ -386,11 +396,11 @@ cff_err_e cff_linked_list_sort(cff_linked_list_s linked_list, uint64_t start,
   if (linked_list.count == 1)
     return CFF_ERR_NONE;
 
-  cff_linked_list_bucket *head = linked_list.buffer;
+  cff_linked_list_bucket *head = (cff_linked_list_bucket *)(linked_list.buffer);
 
   _merge_sort(&head, order, linked_list.data_size);
 
-  linked_list.buffer = head;
+  linked_list.buffer = (uintptr_t)head;
 
   return CFF_ERR_NONE;
 }

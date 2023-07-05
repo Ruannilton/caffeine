@@ -1,9 +1,8 @@
 #pragma once
 
 #include "caffeine_container_type.h"
-#include <caffeine_core.h>
 #include <caffeine_memory.h>
-
+#include <caffeine_types.h>
 
 typedef struct {
   uint64_t (*get_capacity)(void *);

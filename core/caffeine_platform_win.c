@@ -3,6 +3,7 @@
 #ifdef CFF_WINDOWS
 
 #include <Windows.h>
+#include <assert.h>
 #include <malloc.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -39,17 +40,17 @@ void *cff_stack_alloc(uint64_t size) {
 }
 
 void *cff_realloc(void *ptr, uint64_t size) {
-  debug_assert(ptr != NULL);
-  return realloc(ptr, size);
+  assert(ptr != NULL);
+  return realloc(ptr, (size_t)size);
 }
 
 void cff_free(void *ptr) {
-  debug_assert(ptr != NULL);
+  assert(ptr != NULL);
   free(ptr);
 }
 
 void cff_stack_free(void *ptr) {
-  debug_assert(ptr != NULL);
+  assert(ptr != NULL);
 
 #ifdef CFF_MSVC
   _freea(ptr);
@@ -59,7 +60,7 @@ void cff_stack_free(void *ptr) {
 }
 
 uint64_t cff_get_size(void *ptr) {
-  debug_assert(ptr != NULL);
+  assert(ptr != NULL);
 
 #ifdef CFF_MSVC
   return (uint64_t)_msize(ptr);
@@ -85,7 +86,7 @@ void cff_mem_move(const void *from, void *dest, uint64_t size) {
 
   if (d > f && ((unsigned int)(d - f)) < size) {
     int i;
-    for (i = size - 1; i >= 0; i--)
+    for (i = (int)size - 1; i >= 0; i--)
       d[i] = f[i];
     return;
   }
@@ -102,7 +103,7 @@ void cff_mem_move(const void *from, void *dest, uint64_t size) {
 
 void cff_mem_set(const void *data, void *dest, uint64_t data_size,
                  uint64_t buffer_lenght) {
-  debug_assert(buffer_lenght % data_size == 0);
+  assert(buffer_lenght % data_size == 0);
 
   uintptr_t dest_start = (uintptr_t)dest;
 
@@ -146,10 +147,7 @@ static inline cff_print(FILE *const file, const char *const message,
 ) {
   char buffer[PRINT_BUFER_LEN] = {0};
 
-  va_start(arg_ptr, message);
-
   vsnprintf((char *const)buffer, PRINT_BUFER_LEN, message, arg_ptr);
-  va_end(arg_ptr);
 
   fprintf(file, "%s", buffer);
 }
@@ -161,7 +159,9 @@ void cff_print_console(char *message, ...) {
 #else
   __builtin_va_list arg_ptr;
 #endif
+  va_start(arg_ptr, message);
   cff_print(stdout, message, arg_ptr);
+  va_end(arg_ptr);
 }
 
 void cff_print_debug(char *message, ...) {
@@ -189,7 +189,9 @@ void cff_print_error(char *message, ...) {
 #else
   __builtin_va_list arg_ptr;
 #endif
+  va_start(arg_ptr, message);
   cff_print(stderr, message, arg_ptr);
+  va_end(arg_ptr);
 }
 
 #endif

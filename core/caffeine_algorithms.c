@@ -1,7 +1,8 @@
 #pragma once
 
-#include "caffeine_core.h"
 #include "caffeine_platform.h"
+#include "caffeine_types.h"
+
 
 static inline cff_err_e __cff_quick_sort_swap(uintptr_t a, uintptr_t b,
                                               cff_size data_size);

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "caffeine_container_type.h"
-#include <caffeine_core.h>
+#include <caffeine_types.h>
 
 
 struct caffeine_ord_container_s {

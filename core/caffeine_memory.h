@@ -1,6 +1,7 @@
 #pragma once
-#include "caffeine_core.h"
 #include "caffeine_platform.h"
+#include "caffeine_types.h"
+
 /**
  * @struct cff_allocator_t
  * @brief Represents a memory allocator with function pointers for memory

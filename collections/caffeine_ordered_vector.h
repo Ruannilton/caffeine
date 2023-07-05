@@ -2,7 +2,7 @@
 
 #include "caffeine_iterator.h"
 #include "caffeine_ord_container_type.h"
-#include <caffeine_core.h>
+#include <caffeine_types.h>
 
 
 typedef struct {

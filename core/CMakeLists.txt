@@ -16,7 +16,7 @@ add_library(CoreLib STATIC ${SOURCES})
 # Set the public headers
 set(PUBLIC_HEADERS 
     caffeine_algorithms.h
-    caffeine_core.h
+    caffeine_types.h
     caffeine_flags.h
     caffeine_macros.h
     caffeine_memory.h

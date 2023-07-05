@@ -1,6 +1,6 @@
 #pragma once
 
-#include <caffeine_core.h>
+#include <caffeine_types.h>
 
 typedef struct {
   cff_size data_size;

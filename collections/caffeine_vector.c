@@ -3,7 +3,6 @@
 #include "caffeine_vector.h"
 #include "private/caffeine_container_functions.h"
 
-
 #define TO_CONTAINER_PTR(X) (*(cff_container_s *)(X))
 #define TO_CONTAINER(X) (*(cff_container_s *)(&X))
 
@@ -27,6 +26,7 @@ static inline cff_err_e cff_vector_resize(cff_vector_s *vector,
   return CFF_ERR_NONE;
 }
 
+// TODO: handle errors
 static inline cff_err_e cff_vector_grow(cff_vector_s *vector,
                                         cff_allocator_t allocator) {
   uint64_t new_capacity = (uint64_t)(((double)vector->count) * GROW_TAX);
@@ -34,13 +34,18 @@ static inline cff_err_e cff_vector_grow(cff_vector_s *vector,
   if (vector->count + 1 == vector->capacity) {
     return cff_vector_resize(vector, new_capacity, allocator);
   }
+
+  return CFF_ERR_NONE;
 }
 
+// TODO: handle errors
 static inline cff_err_e cff_vector_shrink(cff_vector_s *vector,
                                           cff_allocator_t allocator) {
   if (vector->count <= vector->capacity / 2) {
     return cff_vector_resize(vector, vector->count, allocator);
   }
+
+  return CFF_ERR_NONE;
 }
 
 cff_vector_s cff_vector_create(cff_size data_size, uint64_t capacity,
