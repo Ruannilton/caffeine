@@ -91,6 +91,8 @@ bool cff_mem_cmp(const void *const from, const void *const dest, uint64_t size);
 void cff_mem_set(const void *data, void *dest, uint64_t data_size,
                  uint64_t buffer_lenght);
 
+void cff_mem_zero(void *dest, uint64_t data_size, uint64_t buffer_lenght);
+
 void cff_print_console(char *message, ...);
 
 void cff_print_debug(char *message, ...);

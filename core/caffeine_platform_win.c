@@ -113,6 +113,11 @@ void cff_mem_set(const void *data, void *dest, uint64_t data_size,
   }
 }
 
+void cff_mem_zero(void *dest, uint64_t data_size, uint64_t buffer_lenght) {
+  uint64_t zero = 0;
+  cff_mem_set(&zero, dest, data_size, buffer_lenght);
+}
+
 bool cff_mem_cmp(const void *const a, const void *const b, uint64_t size) {
   register const uintptr_t *f = (const uintptr_t *)(a);
   register const uintptr_t *d = (const uintptr_t *)(b);
