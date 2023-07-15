@@ -1,20 +1,8 @@
 {
+    "cmake.sourceDirectory": "C:/Dev/caff/engine",
     "files.associations": {
-        "caffeine_container_type.h": "c",
-        "caffeine_linked_list.h": "c",
-        "caffeine_hashmap.h": "c",
-        "caffeine_string.h": "c",
-        "stdbool.h": "c",
-        "caffeine_iterator.h": "c",
-        "caffeine_platform.h": "c",
-        "xstring": "c",
         "caffeine_memory.h": "c",
-        "initializer_list": "c",
-        "type_traits": "c",
-        "xutility": "c",
-        "caffeine_container_functions.h": "c",
-        "xmemory": "c",
-        "assert.h": "c",
-        "caffeine_types.h": "c"
+        "caffeine_types.h": "c",
+        "caffeine_ord_container_functions.h": "c"
     }
 }
