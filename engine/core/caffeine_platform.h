@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../caffeine_flags.h"
+#include "caffeine_types.h"
 
 /**
  * @brief Allocates memory using the default allocator.
@@ -98,3 +98,16 @@ void cff_print_console(char *message, ...);
 void cff_print_debug(char *message, ...);
 
 void cff_print_error(char *message, ...);
+
+cff_file cff_file_create(const char *path);
+
+cff_file cff_file_open(const char *path, file_attributes attributes);
+
+cff_err_e cff_file_write_line(cff_file *file, char *string,
+                              uint64_t string_len);
+
+cff_err_e cff_file_close(cff_file *file);
+
+bool cff_file_exists(const char *path);
+
+const char *cff_get_app_directory();

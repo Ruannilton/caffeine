@@ -39,6 +39,10 @@ typedef enum {
   CFF_ERR_INVALID_OPERATION = -4, /**< Invalid operation performed. */
   CFF_ERR_OUT_OF_BOUNDS = -5,     /**< Accessing data out of bounds. */
   CFF_ERR_UNKNOW = -6,            /**< Unknown error occurred. */
+  CFF_ERR_FILE_OPEN = -7,         /**< Unknown error occurred. */
+  CFF_ERR_FILE_CREATE = -8,       /**< Unknown error occurred. */
+  CFF_ERR_FILE_INVALID = -9,      /**< Unknown error occurred. */
+  CFF_ERR_FILE_WRITE = -10,       /**< Unknown error occurred. */
 } cff_err_e;
 
 /**
@@ -136,3 +140,13 @@ bool cff_binary_search(uintptr_t arr_ptr, uintptr_t value_ptr, uint64_t start,
 cff_err_e cff_quick_sort(uintptr_t buffer, cff_size data_size,
                          cff_order_function predicate, uint64_t left,
                          uint64_t right);
+
+typedef enum { FILE_READ = 1, FILE_WRITE = 2 } file_attributes;
+
+typedef struct {
+  uint64_t size;
+  file_attributes attributes;
+  bool open;
+  cff_err_e error;
+  void *handler;
+} cff_file;

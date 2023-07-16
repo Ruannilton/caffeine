@@ -9,8 +9,12 @@ static uint64_t _cff_str_len(const char *restrict str) {
 
 static uint64_t _cff_str_cpy(const char *restrict str, char *buffer) {
   register uint64_t len = 0;
-  while (str[len++] != '\0')
+  while (true) {
     buffer[len] = str[len];
+    if (str[len] == '\0')
+      break;
+    len++;
+  }
   return len;
 }
 
@@ -208,4 +212,36 @@ uint64_t cff_string_count_char(cff_string str, char c) {
     cc += *bff == c;
   }
   return cc;
+}
+
+cff_string cff_string_append(cff_string str, char sep, cff_string other,
+                             cff_allocator_t allocator) {
+
+  cff_size new_len = str.len + other.len;
+
+  if (sep != 0)
+    new_len += 1;
+
+  char *tmp_buffer =
+      (char *)cff_allocator_reallocate(&allocator, str.buffer, new_len + 1);
+
+  if (tmp_buffer == NULL) {
+    return (cff_string){0};
+  }
+
+  uint64_t tmp_buffer_counter = str.len - 1;
+
+  if (sep != 0) {
+    tmp_buffer[tmp_buffer_counter++] = sep;
+  }
+
+  for (size_t i = 0; i < other.len; i++) {
+    tmp_buffer[tmp_buffer_counter] = other.buffer[i];
+    tmp_buffer_counter++;
+  }
+
+  tmp_buffer[tmp_buffer_counter] = '\0';
+
+  str.buffer = tmp_buffer;
+  return str;
 }

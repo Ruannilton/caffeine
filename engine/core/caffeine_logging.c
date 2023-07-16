@@ -1,6 +1,7 @@
 #include "caffeine_logging.h"
+#include "caffeine_memory.h"
 #include "caffeine_platform.h"
-
+#include "caffeine_string.h"
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -9,9 +10,28 @@
 const char *LOG_NAMES[] = {" Error ", " Warning", " Debug ", " Info  ",
                            " Trace "};
 
-void caff_log_init() {}
+static cff_file cff_log_file_buffer;
 
-void caff_log_end() {}
+void caff_log_init() {
+  const char *app_dir = cff_get_app_directory();
+  cff_string directory =
+      cff_string_create_literal(app_dir, cff_global_allocator);
+
+  cff_string file = cff_string_create_literal("log.txt", cff_global_allocator);
+
+  directory = cff_string_append(directory, '\\', file, cff_global_allocator);
+
+  cff_log_file_buffer = cff_file_create(directory.buffer);
+
+  cff_string_destroy(&directory, cff_global_allocator);
+  cff_string_destroy(&file, cff_global_allocator);
+}
+
+void caff_log_end() {
+  if (cff_log_file_buffer.open) {
+    cff_file_close(&cff_log_file_buffer);
+  }
+}
 
 void caff_log(log_level level, const char *message, ...) {
 
@@ -26,5 +46,11 @@ void caff_log(log_level level, const char *message, ...) {
   vsnprintf((char *const)buffer, PRINT_BUFER_LEN, message, arg_ptr);
   va_end(arg_ptr);
 
-  cff_print_console("[%s] %s", LOG_NAMES[level], buffer);
+  char buffer2[PRINT_BUFER_LEN] = {0};
+  sprintf(buffer2, "[%s] %s", LOG_NAMES[level], buffer);
+  uint64_t buffer2_len = strlen(buffer2);
+
+  cff_file_write_line(&cff_log_file_buffer, buffer2, buffer2_len);
+
+  cff_print_console("%s", buffer2);
 }

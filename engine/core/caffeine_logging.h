@@ -12,8 +12,8 @@ typedef enum {
   LOG_LEVEL_TRACE,
 } log_level;
 
-void caff_log_init();
-void caff_log_end();
+CAFF_API void caff_log_init();
+CAFF_API void caff_log_end();
 
 #define caff_log_error(message, ...)                                           \
   caff_log(LOG_LEVEL_ERROR, message, __VA_ARGS__)
