@@ -31,3 +31,7 @@ cff_string cff_string_append(cff_string str, char sep, cff_string other,
 cff_err_e cff_string_split(cff_string str, char sep, cff_string *out_array,
                            uint64_t *array_lenght, cff_allocator_t allocator);
 uint64_t cff_string_count_char(cff_string str, char c);
+
+cff_string cff_string_append_literal(cff_string str, char sep, char *literal,
+                                     uint64_t literal_len,
+                                     cff_allocator_t allocator);

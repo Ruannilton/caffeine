@@ -155,8 +155,10 @@ cff_string cff_string_join(cff_string *strs, char sep, uint64_t array_lenght,
                            cff_allocator_t allocator) {
   uint64_t result_len = 0;
   for (size_t i = 0; i < array_lenght; i++) {
-    result_len += strs[i].len;
+    result_len += strs[i].len - 1;
   }
+
+  result_len += 1;
 
   if (sep != 0)
     result_len += array_lenght;
@@ -237,6 +239,38 @@ cff_string cff_string_append(cff_string str, char sep, cff_string other,
 
   for (size_t i = 0; i < other.len; i++) {
     tmp_buffer[tmp_buffer_counter] = other.buffer[i];
+    tmp_buffer_counter++;
+  }
+
+  tmp_buffer[tmp_buffer_counter] = '\0';
+
+  str.buffer = tmp_buffer;
+  return str;
+}
+
+cff_string cff_string_append_literal(cff_string str, char sep, char *literal,
+                                     uint64_t literal_len,
+                                     cff_allocator_t allocator) {
+  cff_size new_len = str.len + literal_len;
+
+  if (sep != 0)
+    new_len += 1;
+
+  char *tmp_buffer =
+      (char *)cff_allocator_reallocate(&allocator, str.buffer, new_len + 1);
+
+  if (tmp_buffer == NULL) {
+    return (cff_string){0};
+  }
+
+  uint64_t tmp_buffer_counter = str.len - 1;
+
+  if (sep != 0) {
+    tmp_buffer[tmp_buffer_counter++] = sep;
+  }
+
+  for (size_t i = 0; i < literal_len; i++) {
+    tmp_buffer[tmp_buffer_counter] = literal[i];
     tmp_buffer_counter++;
   }
 

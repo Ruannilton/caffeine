@@ -214,6 +214,9 @@ void *cff_platform_open_file(const char *path, file_attributes attributes) {
   HANDLE file_handle = CreateFile(Lpath, access, 0, NULL, OPEN_EXISTING,
                                   FILE_ATTRIBUTE_NORMAL, NULL);
 
+  if (file_handle == INVALID_HANDLE_VALUE)
+    return NULL;
+
   return file_handle;
 }
 
@@ -222,6 +225,9 @@ void *cff_platform_create_file(const char *path) {
 
   HANDLE file_handle = CreateFile(Lpath, GENERIC_READ | GENERIC_WRITE, 0, NULL,
                                   CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (file_handle == INVALID_HANDLE_VALUE)
+    return NULL;
+
   return (void *)file_handle;
 }
 

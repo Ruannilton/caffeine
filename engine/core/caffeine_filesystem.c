@@ -17,7 +17,7 @@ path_builder cff_path_create_from_app(cff_allocator_t allocator) {
   const char *app_dir = cff_get_app_directory();
 
   path_builder path = {.isFile = false};
-  path.paths = cff_vector_create(sizeof(char *), 4, allocator);
+  path.paths = cff_vector_create(sizeof(cff_string), 4, allocator);
 
   uint64_t dir_len = strlen(app_dir);
 
@@ -30,10 +30,9 @@ path_builder cff_path_create_from_app(cff_allocator_t allocator) {
 
       uint64_t size = (uint64_t)(c - last);
 
-      char *buffer = (char *)cff_allocator_allocate(&allocator, size + 1);
-      buffer[size] = '\0';
-      cff_mem_copy(last, buffer, size);
-      cff_vector_push_back(&path.paths, (uintptr_t)buffer, allocator);
+      cff_string str = cff_string_create(last, size + 1, allocator);
+
+      cff_vector_push_back(&path.paths, (uintptr_t)(&str), allocator);
 
       if (*(c + 1) != '\0') {
         last = c + 1;
@@ -113,20 +112,17 @@ cff_err_e cff_path_push_file(path_builder *path, const char *file,
   if (path->isFile)
     return CFF_ERR_INVALID_OPERATION;
 
-  uint64_t str_len = (uint64_t)strlen(file);
+  cff_string file_str = cff_string_create_literal(file, allocator);
 
-  char *dup = cff_allocator_allocate(&allocator, (cff_size)str_len + 1);
-  cff_mem_copy((const void *)file, (void *)dup, str_len);
-  dup[str_len] = '\0';
-
-  cff_err_e err = cff_vector_push_back(&path->paths, (uintptr_t)dup, allocator);
+  cff_err_e err =
+      cff_vector_push_back(&path->paths, (uintptr_t)(&file_str), allocator);
 
   if (err != CFF_ERR_NONE) {
-    cff_allocator_release(&allocator, dup);
+    cff_string_destroy(&file_str, allocator);
     return err;
   }
 
-  path->string_len += str_len;
+  path->string_len += file_str.len;
   path->isFile = true;
 
   return CFF_ERR_NONE;
@@ -164,28 +160,8 @@ cff_err_e cff_path_destroy(path_builder *path, cff_allocator_t allocator) {
 
 cff_string cff_path_to_string(path_builder path, cff_allocator_t allocator) {
 
-  uint64_t result_len = path.paths.count - 1 + path.string_len;
-
-  cff_string str = cff_string_create("", result_len, allocator);
-
-  char *buffer = str.buffer;
-
-  cff_vector_s *vec = &(path.paths);
-
-  char **vec_buf = (char **)vec->buffer;
-  for (size_t i = 0; i < vec->count; i++) {
-    char *str_ptr = vec_buf[i];
-    for (char *i = str_ptr; *i != '\0'; i++) {
-      *buffer = *i;
-      buffer++;
-    }
-
-    *buffer = dir_sep;
-    buffer++;
-  }
-
-  *buffer = '\0';
-
+  cff_string str = cff_string_join((cff_string *)(path.paths.buffer),
+                                   (char)dir_sep, path.paths.count, allocator);
   return str;
 }
 
