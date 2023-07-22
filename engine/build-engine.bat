@@ -13,7 +13,7 @@ REM echo "Files: " %files%
 SET "assembly=engine"
 SET "compilerFlags=-g -shared -Wvarargs -Wall -Werror"
 SET "includeFlags=-Iengine"
-SET "linkerFlags=-luser32"
+SET "linkerFlags=-luser32 -lshell32"
 SET "defines=-D_DEBUG -DCAFF_EXPORT -D_CRT_SECURE_NO_WARNINGS"
 
 REM "Building %assembly%"

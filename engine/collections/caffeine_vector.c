@@ -29,7 +29,7 @@ static inline cff_err_e cff_vector_grow(cff_vector_s *vector,
                                         cff_allocator_t allocator) {
   uint64_t new_capacity = (uint64_t)(((double)vector->count) * GROW_TAX);
 
-  if (vector->count + 1 == vector->capacity) {
+  if (vector->count + 1 >= vector->capacity) {
     return cff_vector_resize(vector, new_capacity, allocator);
   }
 

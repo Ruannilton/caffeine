@@ -32,7 +32,7 @@ typedef enum {
  * @brief Error codes that can be returned by the library functions.
  */
 typedef enum {
-  CFF_ERR_NONE = 1,           /**< No error occurred. */
+  CFF_ERR_NONE = 0,           /**< No error occurred. */
   CFF_ERR_ALLOC = -1,         /**< Error during memory allocation. */
   CFF_ERR_REALLOC = -2,       /**< Error during memory reallocation. */
   CFF_ERR_INVALID_PARAM = -3, /**< Invalid parameter passed to a function. */
@@ -44,6 +44,8 @@ typedef enum {
   CFF_ERR_FILE_INVALID = -9,      /**< Unknown error occurred. */
   CFF_ERR_FILE_WRITE = -10,       /**< Unknown error occurred. */
 } cff_err_e;
+
+typedef enum { FILE_READ = 1, FILE_WRITE = 2 } file_attributes;
 
 /**
  * @typedef cff_order_function
@@ -140,13 +142,3 @@ bool cff_binary_search(uintptr_t arr_ptr, uintptr_t value_ptr, uint64_t start,
 cff_err_e cff_quick_sort(uintptr_t buffer, cff_size data_size,
                          cff_order_function predicate, uint64_t left,
                          uint64_t right);
-
-typedef enum { FILE_READ = 1, FILE_WRITE = 2 } file_attributes;
-
-typedef struct {
-  uint64_t size;
-  file_attributes attributes;
-  bool open;
-  cff_err_e error;
-  void *handler;
-} cff_file;

@@ -99,15 +99,20 @@ void cff_print_debug(char *message, ...);
 
 void cff_print_error(char *message, ...);
 
-cff_file cff_file_create(const char *path);
+void *cff_platform_create_file(const char *path);
 
-cff_file cff_file_open(const char *path, file_attributes attributes);
+void *cff_platform_open_file(const char *path, file_attributes attributes);
 
-cff_err_e cff_file_write_line(cff_file *file, char *string,
-                              uint64_t string_len);
+cff_err_e cff_platform_file_write(void *file, void *data, uint64_t data_size);
 
-cff_err_e cff_file_close(cff_file *file);
+cff_err_e cff_platform_file_close(void *file);
 
-bool cff_file_exists(const char *path);
+cff_err_e cff_platform_file_delete(const char *path);
+
+bool cff_platform_file_exists(const char *path);
+
+uint64_t cff_platform_file_size(void *file);
 
 const char *cff_get_app_directory();
+
+const char *cff_get_app_data_directory();

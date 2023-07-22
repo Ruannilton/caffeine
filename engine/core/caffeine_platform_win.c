@@ -5,11 +5,13 @@
 #include <Windows.h>
 #include <assert.h>
 #include <malloc.h>
+#include <shlobj.h>
 #include <stdarg.h>
 #include <stdio.h>
 
 #define PRINT_BUFER_LEN 3200
 char app_directory[MAX_PATH] = {0};
+char root_directory[MAX_PATH] = {0};
 
 static inline void internal_cff_mem_copy(const void *from, void *dest,
                                          uint64_t size) {
@@ -200,11 +202,9 @@ void cff_print_error(char *message, ...) {
   va_end(arg_ptr);
 }
 
-cff_file cff_file_open(const char *path, file_attributes attributes) {
+void *cff_platform_open_file(const char *path, file_attributes attributes) {
   LPCSTR Lpath = (LPCSTR)path;
   DWORD access = 0;
-
-  cff_file opened_file = {0};
 
   if ((attributes & FILE_READ) != 0)
     access |= GENERIC_READ;
@@ -214,71 +214,45 @@ cff_file cff_file_open(const char *path, file_attributes attributes) {
   HANDLE file_handle = CreateFile(Lpath, access, 0, NULL, OPEN_EXISTING,
                                   FILE_ATTRIBUTE_NORMAL, NULL);
 
-  if (file_handle == INVALID_HANDLE_VALUE) {
-    opened_file.error = CFF_ERR_FILE_OPEN;
-  } else {
-    opened_file.handler = file_handle;
-    opened_file.size = GetFileSize(file_handle, NULL);
-  }
-
-  opened_file.attributes = attributes;
-  opened_file.open = true;
-
-  return opened_file;
+  return file_handle;
 }
 
-cff_file cff_file_create(const char *path) {
+void *cff_platform_create_file(const char *path) {
   LPCSTR Lpath = (LPCSTR)path;
-
-  cff_file opened_file = {0};
 
   HANDLE file_handle = CreateFile(Lpath, GENERIC_READ | GENERIC_WRITE, 0, NULL,
                                   CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-
-  if (file_handle == INVALID_HANDLE_VALUE) {
-    opened_file.error = CFF_ERR_FILE_CREATE;
-  } else {
-    opened_file.handler = file_handle;
-    opened_file.size = GetFileSize(file_handle, NULL);
-  }
-
-  opened_file.attributes = FILE_READ | FILE_WRITE;
-  opened_file.open = true;
-
-  return opened_file;
+  return (void *)file_handle;
 }
 
-cff_err_e cff_file_write_line(cff_file *file, char *string,
-                              uint64_t string_len) {
-  if (file->handler == INVALID_HANDLE_VALUE || file->handler == NULL) {
-    file->error = CFF_ERR_FILE_INVALID;
+cff_err_e cff_platform_file_write(void *file, void *data, uint64_t data_size) {
+  HANDLE handler = (HANDLE)file;
+
+  if (handler == INVALID_HANDLE_VALUE || handler == NULL) {
     return CFF_ERR_FILE_INVALID;
   }
   DWORD bytesWriten = 0;
-  if (!WriteFile((HANDLE)(file->handler), (LPCVOID)string, (DWORD)string_len,
+  if (!WriteFile(handler, (LPCVOID)data, (DWORD)data_size,
                  (LPDWORD)(&bytesWriten), NULL)) {
-    cff_print_error("Failed to write to log file\n");
-    file->error = CFF_ERR_FILE_WRITE;
-    CloseHandle(file->handler);
-    file->handler = NULL;
+    cff_print_error("Failed to write to file\n");
+    CloseHandle(handler);
   }
 
   return CFF_ERR_NONE;
 }
 
-cff_err_e cff_file_close(cff_file *file) {
+cff_err_e cff_platform_file_close(void *file) {
+  HANDLE handler = (HANDLE)file;
 
-  if (file->handler == INVALID_HANDLE_VALUE || file->handler == NULL) {
-    file->error = CFF_ERR_FILE_INVALID;
+  if (handler == INVALID_HANDLE_VALUE || handler == NULL) {
     return CFF_ERR_FILE_INVALID;
   }
 
-  CloseHandle(file->handler);
-  file->handler = NULL;
+  CloseHandle(handler);
   return CFF_ERR_NONE;
 }
 
-bool cff_file_exists(const char *path) {
+bool cff_platform_file_exists(const char *path) {
   LPCSTR filePath = path;
 
   DWORD fileAttributes = GetFileAttributes(filePath);
@@ -290,12 +264,16 @@ bool cff_file_exists(const char *path) {
   return fileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 }
 
+uint64_t cff_platform_file_size(void *file) {
+  if (file == NULL || file == INVALID_HANDLE_VALUE)
+    return 0;
+
+  return (uint64_t)GetFileSize((HANDLE)(file), NULL);
+}
+
 const char *cff_get_app_directory() {
 
   LPSTR buffer = (LPSTR)app_directory;
-
-  if (strlen(app_directory) > 0)
-    return app_directory;
 
   // Get the application directory
   DWORD length = GetModuleFileName(NULL, buffer, MAX_PATH);
@@ -310,5 +288,22 @@ const char *cff_get_app_directory() {
   }
 
   return app_directory;
+}
+
+cff_err_e cff_platform_file_delete(const char *path) {
+  LPCSTR filepath = (LPCSTR)path;
+  if (DeleteFile(filepath))
+    return CFF_ERR_NONE;
+
+  return CFF_ERR_INVALID_OPERATION;
+}
+
+const char *cff_get_app_data_directory() {
+
+  if (SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, root_directory) == S_OK) {
+    return root_directory;
+  }
+
+  return NULL;
 }
 #endif

@@ -4,6 +4,8 @@
         "caffeine_memory.h": "c",
         "caffeine_types.h": "c",
         "caffeine_ord_container_functions.h": "c",
-        "caffeine_string.h": "c"
+        "caffeine_string.h": "c",
+        "caffeine_platform.h": "c",
+        "caffeine_filesystem.h": "c"
     }
 }
