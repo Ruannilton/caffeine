@@ -2,8 +2,6 @@
 
 #include "caffeine_container_type.h"
 #include "caffeine_iterator.h"
-#include "../core/caffeine_types.h"
-
 
 typedef struct {
   uint64_t capacity;

@@ -1,10 +1,11 @@
 #include "caffeine_logging.h"
+#include "../platform/caffeine_platform.h"
 #include "caffeine_filesystem.h"
 #include "caffeine_memory.h"
-#include "caffeine_platform.h"
 #include "caffeine_string.h"
 #include <stdarg.h>
 #include <stdio.h>
+
 
 #define PRINT_BUFER_LEN 3200
 

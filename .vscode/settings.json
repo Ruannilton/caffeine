@@ -6,6 +6,9 @@
         "caffeine_ord_container_functions.h": "c",
         "caffeine_string.h": "c",
         "caffeine_platform.h": "c",
-        "caffeine_filesystem.h": "c"
+        "caffeine_filesystem.h": "c",
+        "caffeine_vector.h": "c",
+        "caffeine_container_type.h": "c",
+        "caffeine_container_functions.h": "c"
     }
 }

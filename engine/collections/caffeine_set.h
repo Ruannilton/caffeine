@@ -1,9 +1,8 @@
 #pragma once
 
+#include "../caffeine_types.h"
 #include "../core/caffeine_memory.h"
-#include "../core/caffeine_types.h"
 #include "caffeine_iterator.h"
-
 
 typedef struct {
   cff_size data_size;

@@ -1,5 +1,5 @@
 #include "caffeine_memory.h"
-#include "caffeine_platform.h"
+#include "../platform/caffeine_platform.h"
 
 static void *allocate(void *context, cff_size size) { return cff_malloc(size); }
 

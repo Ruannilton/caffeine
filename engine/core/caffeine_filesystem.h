@@ -1,8 +1,8 @@
 #pragma once
 
+#include "../caffeine_types.h"
 #include "../collections/caffeine_vector.h"
 #include "caffeine_string.h"
-#include "caffeine_types.h"
 
 typedef struct {
   cff_vector_s paths;

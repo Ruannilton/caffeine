@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core/caffeine_types.h"
+#include "../caffeine_types.h"
 
 struct caffeine_container_s {
   uint64_t capacity;

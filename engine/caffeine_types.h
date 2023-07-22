@@ -4,8 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../caffeine.h"
-#include "../caffeine_flags.h"
+#include "caffeine.h"
+#include "caffeine_flags.h"
 
 /**
  * @typedef cff_size

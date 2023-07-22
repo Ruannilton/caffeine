@@ -1,5 +1,5 @@
 #include "caffeine_ordered_vector.h"
-#include "private/caffeine_ord_container_functions.h"
+#include "caffeine_ord_container_functions.h"
 
 #define TO_CONTAINER_PTR(X) (*(cff_ord_container_s *)(X))
 #define TO_CONTAINER(X) (*(cff_ord_container_s *)(&X))

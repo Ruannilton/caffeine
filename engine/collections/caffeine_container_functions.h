@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../core/caffeine_memory.h"
-#include "../caffeine_container_type.h"
-#include "../caffeine_iterator.h"
+#include "../core/caffeine_memory.h"
+#include "caffeine_container_type.h"
+#include "caffeine_iterator.h"
 
 
 cff_container_s cff_container_create(cff_size data_size, uint64_t capacity,

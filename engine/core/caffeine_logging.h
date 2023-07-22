@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../caffeine.h"
-#include "caffeine_types.h"
+#include "../caffeine_types.h"
 #include <string.h>
 
 typedef enum {

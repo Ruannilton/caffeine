@@ -1,9 +1,7 @@
 #pragma once
 
 #include "../core/caffeine_memory.h"
-#include "../core/caffeine_types.h"
 #include "caffeine_container_type.h"
-
 
 typedef struct {
   uint64_t (*get_capacity)(void *);

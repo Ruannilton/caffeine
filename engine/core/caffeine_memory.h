@@ -1,6 +1,5 @@
 #pragma once
-#include "caffeine_platform.h"
-#include "caffeine_types.h"
+#include "../platform/caffeine_platform.h"
 
 /**
  * @struct cff_allocator_t

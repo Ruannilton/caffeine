@@ -1,4 +1,4 @@
-#include "private/caffeine_ord_container_functions.h"
+#include "caffeine_ord_container_functions.h"
 
 static uint64_t cff_ord_container_get_capacity(void *ptr) {
   cff_container_s *container = (cff_container_s *)ptr;

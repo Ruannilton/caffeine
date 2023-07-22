@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../core/caffeine_types.h"
 #include "caffeine_container_type.h"
 #include "caffeine_iterator.h"
 

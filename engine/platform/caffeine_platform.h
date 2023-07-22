@@ -1,8 +1,6 @@
 #pragma once
-#include <stdbool.h>
-#include <stdint.h>
 
-#include "caffeine_types.h"
+#include "../caffeine_types.h"
 
 /**
  * @brief Allocates memory using the default allocator.

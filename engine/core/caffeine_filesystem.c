@@ -1,5 +1,5 @@
 #include "caffeine_filesystem.h"
-#include "caffeine_platform.h"
+#include "../platform/caffeine_platform.h"
 #include "string.h"
 
 const char dir_sep =
@@ -170,8 +170,6 @@ cff_string cff_path_to_string(path_builder path, cff_allocator_t allocator) {
 
   char *buffer = str.buffer;
 
-  cff_iterator_s it = cff_vector_get_iterator(&path.paths);
-
   cff_vector_s *vec = &(path.paths);
 
   char **vec_buf = (char **)vec->buffer;
@@ -185,18 +183,6 @@ cff_string cff_path_to_string(path_builder path, cff_allocator_t allocator) {
     *buffer = dir_sep;
     buffer++;
   }
-
-  // do {
-  //   char *str_ptr = (char *)cff_iterator_current(&it);
-
-  //   for (char *i = str_ptr; *i != '\0'; i++) {
-  //     *buffer = *i;
-  //     buffer++;
-  //   }
-
-  //   *buffer = dir_sep;
-  //   buffer++;
-  // } while (cff_iterator_next(&it));
 
   *buffer = '\0';
 

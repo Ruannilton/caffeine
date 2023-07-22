@@ -1,5 +1,6 @@
-#include "caffeine_platform.h"
-#include "caffeine_types.h"
+#include "../caffeine_types.h"
+#include "../platform/caffeine_platform.h"
+
 
 static inline cff_err_e __cff_quick_sort_swap(uintptr_t a, uintptr_t b,
                                               cff_size data_size);
