@@ -146,60 +146,45 @@ bool cff_mem_cmp(const void *const a, const void *const b, uint64_t size) {
   return true;
 }
 
-static inline void cff_print(FILE *const file, const char *const message,
-#ifdef CFF_MSVC
-                             va_list arg_ptr
-#else
-                             __builtin_va_list arg_ptr
-#endif
-) {
-  char buffer[PRINT_BUFER_LEN] = {0};
+void cff_print_console(log_level level, char *message) {
 
-  vsnprintf((char *const)buffer, PRINT_BUFER_LEN, message, arg_ptr);
+  HANDLE console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
-  fprintf(file, "%s", buffer);
+  CONSOLE_SCREEN_BUFFER_INFO Info;
+  GetConsoleScreenBufferInfo(console_handle, &Info);
+
+  // ERROR,WARN,DEBUG,INFO,TRACE
+  static WORD levels[] = {
+      FOREGROUND_RED, FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN,
+      FOREGROUND_BLUE, FOREGROUND_GREEN, FOREGROUND_INTENSITY};
+  SetConsoleTextAttribute(console_handle, levels[level]);
+  OutputDebugStringA(message);
+  uint64_t length = strlen(message);
+  LPDWORD number_written = 0;
+  WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE), message, (DWORD)length,
+                number_written, 0);
+
+  SetConsoleTextAttribute(console_handle, Info.wAttributes);
 }
 
-void cff_print_console(char *message, ...) {
+void cff_print_error(log_level level, char *message) {
+  HANDLE console_handle = GetStdHandle(STD_ERROR_HANDLE);
 
-#ifdef CFF_MSVC
-  va_list arg_ptr;
-#else
-  __builtin_va_list arg_ptr;
-#endif
-  va_start(arg_ptr, message);
-  cff_print(stdout, message, arg_ptr);
-  va_end(arg_ptr);
-}
+  CONSOLE_SCREEN_BUFFER_INFO Info;
+  GetConsoleScreenBufferInfo(console_handle, &Info);
 
-void cff_print_debug(char *message, ...) {
-#ifdef CFF_MSVC
-  va_list arg_ptr;
-#else
-  __builtin_va_list arg_ptr;
-#endif
+  // ERROR,WARN,DEBUG,INFO,TRACE
+  static WORD levels[] = {
+      FOREGROUND_RED, FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN,
+      FOREGROUND_BLUE, FOREGROUND_GREEN, FOREGROUND_INTENSITY};
+  SetConsoleTextAttribute(console_handle, levels[level]);
+  OutputDebugStringA(message);
+  uint64_t length = strlen(message);
+  LPDWORD number_written = 0;
+  WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), message, (DWORD)length,
+                number_written, 0);
 
-  const char buffer[PRINT_BUFER_LEN] = {0};
-
-  va_start(arg_ptr, message);
-
-  const char *const msg = message;
-
-  vsnprintf((char *const)buffer, PRINT_BUFER_LEN, msg, arg_ptr);
-  va_end(arg_ptr);
-
-  OutputDebugString(buffer);
-}
-
-void cff_print_error(char *message, ...) {
-#ifdef CFF_MSVC
-  va_list arg_ptr;
-#else
-  __builtin_va_list arg_ptr;
-#endif
-  va_start(arg_ptr, message);
-  cff_print(stderr, message, arg_ptr);
-  va_end(arg_ptr);
+  SetConsoleTextAttribute(console_handle, Info.wAttributes);
 }
 
 void *cff_platform_open_file(const char *path, file_attributes attributes) {
@@ -240,7 +225,7 @@ cff_err_e cff_platform_file_write(void *file, void *data, uint64_t data_size) {
   DWORD bytesWriten = 0;
   if (!WriteFile(handler, (LPCVOID)data, (DWORD)data_size,
                  (LPDWORD)(&bytesWriten), NULL)) {
-    cff_print_error("Failed to write to file\n");
+    cff_print_error(LOG_LEVEL_ERROR, "Failed to write to file\n");
     CloseHandle(handler);
   }
 

@@ -27,6 +27,14 @@ typedef enum {
                       second value. */
 } cff_ord_e;
 
+typedef enum {
+  LOG_LEVEL_ERROR = 0,
+  LOG_LEVEL_WARNING,
+  LOG_LEVEL_DEBUG,
+  LOG_LEVEL_INFO,
+  LOG_LEVEL_TRACE,
+} log_level;
+
 /**
  * @enum cff_err_e
  * @brief Error codes that can be returned by the library functions.

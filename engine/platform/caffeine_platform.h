@@ -91,11 +91,9 @@ void cff_mem_set(const void *data, void *dest, uint64_t data_size,
 
 void cff_mem_zero(void *dest, uint64_t data_size, uint64_t buffer_lenght);
 
-void cff_print_console(char *message, ...);
+void cff_print_console(log_level level, char *message);
 
-void cff_print_debug(char *message, ...);
-
-void cff_print_error(char *message, ...);
+void cff_print_error(log_level level, char *message);
 
 void *cff_platform_create_file(const char *path);
 

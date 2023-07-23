@@ -6,10 +6,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-
 #define PRINT_BUFER_LEN 3200
 
-const char *LOG_NAMES[] = {" Error ", " Warning", " Debug ", " Info  ",
+const char *LOG_NAMES[] = {" Error ", " Warn  ", " Debug ", " Info  ",
                            " Trace "};
 
 static cff_file cff_log_file_buffer;
@@ -53,5 +52,5 @@ void caff_log(log_level level, const char *message, ...) {
 
   cff_file_write_line(&cff_log_file_buffer, buffer2, buffer2_len);
 
-  cff_print_console("%s", buffer2);
+  cff_print_console(level, buffer2);
 }
