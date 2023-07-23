@@ -22,7 +22,7 @@ typedef struct {
                                       of allocated memory. */
 } cff_allocator_t;
 
-extern cff_allocator_t cff_global_allocator;
+extern const cff_allocator_t *cff_global_allocator;
 
 /**
  * @brief Allocates memory using the specified allocator.

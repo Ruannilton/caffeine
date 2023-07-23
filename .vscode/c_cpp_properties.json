@@ -12,8 +12,8 @@
                 "CAFF_EXPORT"
             ],
             "windowsSdkVersion": "10.0.22000.0",
-            "compilerPath": " C:\\Program Files\\LLVM\\bin\\clang.exe",
-            "cStandard": "c17",
+            "compilerPath": "C:/Program Files/LLVM/bin/clang.exe",
+            "cStandard": "c23",
             "cppStandard": "c++17",
             "intelliSenseMode": "clang-x64",
             "configurationProvider": "ms-vscode.cmake-tools"
