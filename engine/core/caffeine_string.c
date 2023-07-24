@@ -1,14 +1,14 @@
 #include "caffeine_string.h"
 
 static uint64_t _cff_str_len(const char *restrict str) {
-  register uint64_t len = 0;
+  uint64_t len = 0;
   while (str[len++] != '\0')
     ;
   return len;
 }
 
-static uint64_t _cff_str_cpy(const char *restrict str, char *buffer) {
-  register uint64_t len = 0;
+static uint64_t _cff_str_cpy(const char *str, char *buffer) {
+  uint64_t len = 0;
   while (true) {
     buffer[len] = str[len];
     if (str[len] == '\0')
@@ -32,11 +32,21 @@ static inline char _cff_char_to_lower(char c) {
   return c;
 }
 
-cff_string cff_string_create_literal(const char *str,
-                                     cff_allocator_t allocator) {
+// TODO: handle alloc error
+cff_string cff_string_create_literal(const char *str, cff_allocator allocator) {
+
   uint64_t lenght = _cff_str_len(str);
-  char *bff =
-      cff_allocator_allocate(&allocator, (cff_size)(lenght * sizeof(char)));
+
+  char *bff = NULL;
+
+  cff_size alloc_size = (cff_size)(lenght * sizeof(char));
+
+  cff_err_e bff_err =
+      cff_allocator_alloc(allocator, alloc_size, (uintptr_t *)(&bff));
+
+  if (IS_ERROR(bff_err)) {
+    return (cff_string){0};
+  }
 
   uint64_t copied = lenght;
 
@@ -55,9 +65,17 @@ cff_string cff_string_create_literal(const char *str,
 }
 
 cff_string cff_string_create(char *str, cff_size lenght,
-                             cff_allocator_t allocator) {
-  char *bff =
-      cff_allocator_allocate(&allocator, (cff_size)(lenght * sizeof(char)));
+                             cff_allocator allocator) {
+  char *bff = NULL;
+
+  cff_size alloc_size = (cff_size)(lenght * sizeof(char));
+
+  cff_err_e bff_err =
+      cff_allocator_alloc(allocator, alloc_size, (uintptr_t *)(&bff));
+
+  if (IS_ERROR(bff_err)) {
+    return (cff_string){0};
+  }
 
   uint64_t copied = lenght;
 
@@ -76,14 +94,22 @@ cff_string cff_string_create(char *str, cff_size lenght,
 }
 
 cff_err_e cff_string_update(cff_string *from, char *str, cff_size lenght,
-                            cff_allocator_t allocator) {
+                            cff_allocator allocator) {
+
   if (from->len < lenght) {
-    cff_string_destroy(from, allocator);
-    char *bff =
-        cff_allocator_allocate(&allocator, (cff_size)(lenght * sizeof(char)));
-    if (bff == NULL)
-      return CFF_ERR_ALLOC;
+    char *bff = NULL;
+
+    cff_size alloc_size = (cff_size)(lenght * sizeof(char));
+
+    cff_err_e bff_err = cff_allocator_realloc(
+        allocator, (uintptr_t)from->buffer, alloc_size, (uintptr_t *)(&bff));
+
+    if (IS_ERROR(bff_err)) {
+      return bff_err;
+    }
+
     from->buffer = bff;
+    from->len = lenght;
   }
 
   uint64_t copied = _cff_str_cpy(str, from->buffer);
@@ -97,12 +123,12 @@ cff_err_e cff_string_update(cff_string *from, char *str, cff_size lenght,
   return CFF_ERR_NONE;
 }
 
-cff_string cff_string_copy(cff_string from, cff_allocator_t allocator) {
+cff_string cff_string_copy(cff_string from, cff_allocator allocator) {
   return cff_string_create(from.buffer, from.len, allocator);
 }
 
-void cff_string_destroy(cff_string *from, cff_allocator_t allocator) {
-  cff_allocator_release(&allocator, from->buffer);
+void cff_string_destroy(cff_string *from, cff_allocator allocator) {
+  cff_allocator_release(allocator, (uintptr_t)from->buffer);
   from->buffer = 0;
   from->len = 0;
 }
@@ -152,7 +178,7 @@ cff_string cff_string_lower(cff_string str) {
 }
 
 cff_string cff_string_join(cff_string *strs, char sep, uint64_t array_lenght,
-                           cff_allocator_t allocator) {
+                           cff_allocator allocator) {
   uint64_t result_len = 0;
   for (size_t i = 0; i < array_lenght; i++) {
     result_len += strs[i].len - 1;
@@ -185,8 +211,17 @@ cff_string cff_string_join(cff_string *strs, char sep, uint64_t array_lenght,
 }
 
 cff_err_e cff_string_split(cff_string str, char sep, cff_string *out_array,
-                           uint64_t *array_lenght, cff_allocator_t allocator) {
-  char *tmp_buffer = (char *)cff_allocator_allocate(&allocator, str.len);
+                           uint64_t *array_lenght, cff_allocator allocator) {
+
+  char *tmp_buffer = NULL;
+
+  cff_err_e tmp_err =
+      cff_allocator_alloc(allocator, str.len, (uintptr_t *)(&tmp_buffer));
+
+  if (IS_ERROR(tmp_err)) {
+    return tmp_err;
+  }
+
   uint64_t acc = 0;
   *array_lenght = 0;
 
@@ -202,7 +237,7 @@ cff_err_e cff_string_split(cff_string str, char sep, cff_string *out_array,
     }
   }
 
-  cff_allocator_release(&allocator, tmp_buffer);
+  cff_allocator_release(allocator, (uintptr_t)tmp_buffer);
 
   return CFF_ERR_NONE;
 }
@@ -216,18 +251,21 @@ uint64_t cff_string_count_char(cff_string str, char c) {
   return cc;
 }
 
+// TODO : handle error
 cff_string cff_string_append(cff_string str, char sep, cff_string other,
-                             cff_allocator_t allocator) {
+                             cff_allocator allocator) {
 
   cff_size new_len = str.len + other.len;
 
   if (sep != 0)
     new_len += 1;
 
-  char *tmp_buffer =
-      (char *)cff_allocator_reallocate(&allocator, str.buffer, new_len + 1);
+  char *tmp_buffer = NULL;
 
-  if (tmp_buffer == NULL) {
+  cff_err_e tmp_err = cff_allocator_realloc(
+      allocator, (uintptr_t)str.buffer, new_len + 1, (uintptr_t *)tmp_buffer);
+
+  if (IS_ERROR(tmp_err)) {
     return (cff_string){0};
   }
 
@@ -250,16 +288,18 @@ cff_string cff_string_append(cff_string str, char sep, cff_string other,
 
 cff_string cff_string_append_literal(cff_string str, char sep, char *literal,
                                      uint64_t literal_len,
-                                     cff_allocator_t allocator) {
+                                     cff_allocator allocator) {
   cff_size new_len = str.len + literal_len;
 
   if (sep != 0)
     new_len += 1;
 
-  char *tmp_buffer =
-      (char *)cff_allocator_reallocate(&allocator, str.buffer, new_len + 1);
+  char *tmp_buffer = NULL;
 
-  if (tmp_buffer == NULL) {
+  cff_err_e tmp_err = cff_allocator_realloc(
+      allocator, (uintptr_t)str.buffer, new_len + 1, (uintptr_t *)tmp_buffer);
+
+  if (IS_ERROR(tmp_err)) {
     return (cff_string){0};
   }
 

@@ -18,21 +18,21 @@ typedef struct {
   void *handler;
 } cff_file;
 
-path_builder cff_path_create_from_app(cff_allocator_t allocator);
+path_builder cff_path_create_from_app(cff_allocator allocator);
 
-path_builder cff_path_create_from_app_data(cff_allocator_t allocator);
+path_builder cff_path_create_from_app_data(cff_allocator allocator);
 
 cff_err_e cff_path_push_directory(path_builder *path, const char *directory,
-                                  cff_allocator_t allocator);
+                                  cff_allocator allocator);
 
 cff_err_e cff_path_push_file(path_builder *path, const char *file,
-                             cff_allocator_t allocator);
+                             cff_allocator allocator);
 
-cff_err_e cff_path_pop(path_builder *path, cff_allocator_t allocator);
+cff_err_e cff_path_pop(path_builder *path, cff_allocator allocator);
 
-cff_err_e cff_path_destroy(path_builder *path, cff_allocator_t allocator);
+cff_err_e cff_path_destroy(path_builder *path, cff_allocator allocator);
 
-cff_string cff_path_to_string(path_builder path, cff_allocator_t allocator);
+cff_string cff_path_to_string(path_builder path, cff_allocator allocator);
 
 cff_file cff_file_open(const char *filepath, file_attributes attributes);
 

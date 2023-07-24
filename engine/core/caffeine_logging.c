@@ -14,17 +14,17 @@ const char *LOG_NAMES[] = {" Error ", " Warn  ", " Debug ", " Info  ",
 static cff_file cff_log_file_buffer;
 
 void caff_log_init() {
-  path_builder path = cff_path_create_from_app(cff_global_allocator);
-  cff_path_push_file(&path, "log.txt", cff_global_allocator);
+  path_builder path = cff_path_create_from_app(CFF_GLOBAL_ALLOC);
+  cff_path_push_file(&path, "log.txt", CFF_GLOBAL_ALLOC);
 
   // TODO: fix to string
-  cff_string log_path = cff_path_to_string(path, cff_global_allocator);
+  cff_string log_path = cff_path_to_string(path, CFF_GLOBAL_ALLOC);
 
   cff_log_file_buffer =
       cff_file_open_or_create(log_path.buffer, FILE_READ | FILE_WRITE);
 
-  cff_path_destroy(&path, cff_global_allocator);
-  cff_string_destroy(&log_path, cff_global_allocator);
+  cff_path_destroy(&path, CFF_GLOBAL_ALLOC);
+  cff_string_destroy(&log_path, CFF_GLOBAL_ALLOC);
 }
 
 void caff_log_end() {

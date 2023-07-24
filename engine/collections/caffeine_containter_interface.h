@@ -10,6 +10,6 @@ typedef struct {
 	uint64_t(*get_count)(cff_container_s*);
 	cff_err_e(*get_item)(cff_container_s*, uint64_t, uintptr_t);
 	cff_err_e(*get_item_ref)(cff_container_s*, uint64_t, uintptr_t*);
-	cff_err_e(*add_item)(cff_container_s*, uint64_t, uintptr_t, cff_allocator_t);
-	cff_err_e(*remove_item)(cff_container_s*, uint64_t, cff_allocator_t);
+	cff_err_e(*add_item)(cff_container_s*, uint64_t, uintptr_t, cff_allocator);
+	cff_err_e(*remove_item)(cff_container_s*, uint64_t, cff_allocator);
 }cff_container_i;

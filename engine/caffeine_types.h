@@ -150,3 +150,5 @@ bool cff_binary_search(uintptr_t arr_ptr, uintptr_t value_ptr, uint64_t start,
 cff_err_e cff_quick_sort(uintptr_t buffer, cff_size data_size,
                          cff_order_function predicate, uint64_t left,
                          uint64_t right);
+
+#define IS_ERROR(code) ((code) != CFF_ERR_NONE)

@@ -20,28 +20,33 @@ static bool cff_hashmp_get_item_ref(void *ptr, uint64_t index, uintptr_t *out) {
 }
 
 static cff_hashmap_s _hashmap_resize(cff_hashmap_s hashmap, uint64_t new_size,
-                                     cff_allocator_t allocator) {
-  uintptr_t data_buffer = (uintptr_t)(cff_allocator_allocate(
-      &allocator, (cff_size)(new_size * hashmap.data_size)));
+                                     cff_allocator allocator) {
 
-  if (data_buffer == 0)
-    return (cff_hashmap_s){.error_code = CFF_ERR_ALLOC};
+  uintptr_t data_buffer = 0;
+  cff_err_e dt_alloc_e = cff_allocator_alloc(
+      allocator, (cff_size)(new_size * hashmap.data_size), &data_buffer);
 
-  uintptr_t key_buffer = (uintptr_t)(cff_allocator_allocate(
-      &allocator, (cff_size)(new_size * hashmap.key_size)));
+  if (dt_alloc_e != CFF_ERR_NONE)
+    return (cff_hashmap_s){.error_code = dt_alloc_e};
 
-  if (key_buffer == 0) {
-    cff_allocator_release(&allocator, (void *)data_buffer);
-    return (cff_hashmap_s){.error_code = CFF_ERR_ALLOC};
+  uintptr_t key_buffer = 0;
+  cff_err_e key_alloc_e = cff_allocator_alloc(
+      allocator, (cff_size)(new_size * hashmap.key_size), &key_buffer);
+
+  if (key_alloc_e != CFF_ERR_NONE) {
+    cff_allocator_release(allocator, data_buffer);
+    return (cff_hashmap_s){.error_code = key_alloc_e};
   }
 
-  bool *used_buffer = (bool *)(cff_allocator_allocate(
-      &allocator, (cff_size)(new_size * sizeof(bool))));
+  bool *used_buffer = 0;
+  cff_err_e used_alloc_e =
+      cff_allocator_alloc(allocator, (cff_size)(new_size * sizeof(bool)),
+                          (uintptr_t *)(&used_buffer));
 
-  if (used_buffer == 0) {
-    cff_allocator_release(&allocator, (void *)data_buffer);
-    cff_allocator_release(&allocator, (void *)key_buffer);
-    return (cff_hashmap_s){.error_code = CFF_ERR_ALLOC};
+  if (used_alloc_e != CFF_ERR_NONE) {
+    cff_allocator_release(allocator, data_buffer);
+    cff_allocator_release(allocator, key_buffer);
+    return (cff_hashmap_s){.error_code = used_alloc_e};
   }
 
   uint64_t max_collisions = 0;
@@ -78,9 +83,9 @@ static cff_hashmap_s _hashmap_resize(cff_hashmap_s hashmap, uint64_t new_size,
                  hashmap.key_size);
   }
 
-  cff_allocator_release(&allocator, hashmap.data);
-  cff_allocator_release(&allocator, hashmap.keys);
-  cff_allocator_release(&allocator, hashmap.used_slot);
+  cff_allocator_release(allocator, (uintptr_t)hashmap.data);
+  cff_allocator_release(allocator, (uintptr_t)hashmap.keys);
+  cff_allocator_release(allocator, (uintptr_t)hashmap.used_slot);
 
   hashmap.collision_count = max_collisions;
   hashmap.data = (void *)data_buffer;
@@ -95,29 +100,33 @@ cff_hashmap_s cff_hashmap_create(cff_size key_size, cff_size data_size,
                                  cff_comparer_function key_cmp_fn,
                                  cff_comparer_function data_cmp_fn,
                                  cff_hash_function hash_fn,
-                                 cff_allocator_t allocator) {
+                                 cff_allocator allocator) {
 
-  uintptr_t data_buffer = (uintptr_t)(
-      cff_allocator_allocate(&allocator, (cff_size)(capacity * data_size)));
-  if (data_buffer == 0) {
-    return (cff_hashmap_s){.error_code = CFF_ERR_ALLOC};
+  uintptr_t data_buffer = 0;
+  cff_err_e dt_alloc_e = cff_allocator_alloc(
+      allocator, (cff_size)(capacity * data_size), &data_buffer);
+
+  if (dt_alloc_e != CFF_ERR_NONE)
+    return (cff_hashmap_s){.error_code = dt_alloc_e};
+
+  uintptr_t key_buffer = 0;
+  cff_err_e key_alloc_e = cff_allocator_alloc(
+      allocator, (cff_size)(capacity * key_size), &key_buffer);
+
+  if (key_alloc_e != CFF_ERR_NONE) {
+    cff_allocator_release(allocator, data_buffer);
+    return (cff_hashmap_s){.error_code = key_alloc_e};
   }
 
-  uintptr_t key_buffer = (uintptr_t)(
-      cff_allocator_allocate(&allocator, (cff_size)(capacity * key_size)));
+  bool *used_buffer = 0;
+  cff_err_e used_alloc_e =
+      cff_allocator_alloc(allocator, (cff_size)(capacity * sizeof(bool)),
+                          (uintptr_t *)(&used_buffer));
 
-  if (key_buffer == 0) {
-    cff_allocator_release(&allocator, (void *)data_buffer);
-    return (cff_hashmap_s){.error_code = CFF_ERR_ALLOC};
-  }
-
-  bool *used_buffer = (bool *)(cff_allocator_allocate(
-      &allocator, (cff_size)(capacity * sizeof(bool))));
-
-  if (used_buffer == 0) {
-    cff_allocator_release(&allocator, (void *)data_buffer);
-    cff_allocator_release(&allocator, (void *)key_buffer);
-    return (cff_hashmap_s){.error_code = CFF_ERR_ALLOC};
+  if (used_alloc_e != CFF_ERR_NONE) {
+    cff_allocator_release(allocator, data_buffer);
+    cff_allocator_release(allocator, key_buffer);
+    return (cff_hashmap_s){.error_code = used_alloc_e};
   }
 
   bool cnt = false;
@@ -136,7 +145,7 @@ cff_hashmap_s cff_hashmap_create(cff_size key_size, cff_size data_size,
 }
 
 bool cff_hashmap_add(cff_hashmap_s hashmap, uintptr_t key, uintptr_t value,
-                     cff_allocator_t allocator) {
+                     cff_allocator allocator) {
   if ((float)hashmap.count / hashmap.capacity >= 0.75f) {
     hashmap = _hashmap_resize(hashmap, hashmap.capacity * 2, allocator);
     if (hashmap.error_code != CFF_ERR_NONE)
@@ -206,7 +215,7 @@ bool cff_hashmap_get(cff_hashmap_s hashmap, uintptr_t key, uintptr_t *value) {
 }
 
 bool cff_hashmap_remove(cff_hashmap_s hashmap, uintptr_t key,
-                        cff_allocator_t allocator) {
+                        cff_allocator allocator) {
   uint64_t collision_count = 0;
   uint64_t entry_index =
       hashmap.hash_fn(key, hashmap.key_size, 0) % hashmap.capacity;
@@ -283,16 +292,15 @@ void cff_hashmap_clear(cff_hashmap_s hashmap) {
               (cff_size)(hashmap.capacity * sizeof(bool)));
 }
 
-void cff_hashmap_destroy(cff_hashmap_s hashmap, cff_allocator_t allocator) {
-  cff_allocator_release(&allocator, hashmap.data);
-  cff_allocator_release(&allocator, hashmap.keys);
-  cff_allocator_release(&allocator, hashmap.used_slot);
+void cff_hashmap_destroy(cff_hashmap_s hashmap, cff_allocator allocator) {
+  cff_allocator_release(allocator, (uintptr_t)hashmap.data);
+  cff_allocator_release(allocator, (uintptr_t)hashmap.keys);
+  cff_allocator_release(allocator, (uintptr_t)hashmap.used_slot);
 
   hashmap = (cff_hashmap_s){0};
 }
 
-cff_hashmap_s cff_hashmap_copy(cff_hashmap_s hashmap,
-                               cff_allocator_t allocator) {
+cff_hashmap_s cff_hashmap_copy(cff_hashmap_s hashmap, cff_allocator allocator) {
   uint64_t new_size = hashmap.count * 2;
 
   cff_hashmap_s new_hash = cff_hashmap_create(
@@ -312,7 +320,7 @@ cff_hashmap_s cff_hashmap_copy(cff_hashmap_s hashmap,
 }
 
 cff_hashmap_s cff_hashmap_clone(cff_hashmap_s hashmap,
-                                cff_allocator_t allocator) {
+                                cff_allocator allocator) {
   cff_hashmap_s new_hash = cff_hashmap_create(
       hashmap.key_size, hashmap.data_size, hashmap.capacity, hashmap.key_cmp_fn,
       hashmap.data_cmp_fn, hashmap.hash_fn, allocator);

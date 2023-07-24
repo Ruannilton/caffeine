@@ -12,7 +12,7 @@ const char dir_sep =
 #define MAX_PATH 256
 
 // TODO: check vector errors
-path_builder cff_path_create_from_app(cff_allocator_t allocator) {
+path_builder cff_path_create_from_app(cff_allocator allocator) {
 
   const char *app_dir = cff_get_app_directory();
 
@@ -48,11 +48,11 @@ path_builder cff_path_create_from_app(cff_allocator_t allocator) {
 }
 
 // TODO: check vector errors
-path_builder cff_path_create_from_app_data(cff_allocator_t allocator) {
+path_builder cff_path_create_from_app_data(cff_allocator allocator) {
   const char *app_dir = cff_get_app_data_directory();
 
   path_builder path = {.isFile = false};
-  path.paths = cff_vector_create(sizeof(char *), 4, allocator);
+  path.paths = cff_vector_create(sizeof(cff_string), 4, allocator);
 
   uint64_t dir_len = strlen(app_dir);
 
@@ -65,10 +65,9 @@ path_builder cff_path_create_from_app_data(cff_allocator_t allocator) {
 
       uint64_t size = (uint64_t)(c - last);
 
-      char *buffer = (char *)cff_allocator_allocate(&allocator, size + 1);
-      buffer[size] = '\0';
-      cff_mem_copy(last, buffer, size);
-      cff_vector_push_back(&path.paths, (uintptr_t)buffer, allocator);
+      cff_string str = cff_string_create(last, size + 1, allocator);
+
+      cff_vector_push_back(&path.paths, (uintptr_t)(&str), allocator);
 
       if (*(c + 1) != '\0') {
         last = c + 1;
@@ -84,31 +83,28 @@ path_builder cff_path_create_from_app_data(cff_allocator_t allocator) {
 }
 
 cff_err_e cff_path_push_directory(path_builder *path, const char *directory,
-                                  cff_allocator_t allocator) {
+                                  cff_allocator allocator) {
 
   if (path->isFile)
     return CFF_ERR_INVALID_OPERATION;
 
-  uint64_t str_len = (uint64_t)strlen(directory);
+  cff_string file_str = cff_string_create_literal(directory, allocator);
 
-  char *dup = cff_allocator_allocate(&allocator, (cff_size)str_len + 1);
-  cff_mem_copy((const void *)directory, (void *)dup, str_len);
-  dup[str_len] = '\0';
-
-  cff_err_e err = cff_vector_push_back(&path->paths, (uintptr_t)dup, allocator);
+  cff_err_e err =
+      cff_vector_push_back(&path->paths, (uintptr_t)(&file_str), allocator);
 
   if (err != CFF_ERR_NONE) {
-    cff_allocator_release(&allocator, dup);
+    cff_string_destroy(&file_str, allocator);
     return err;
   }
 
-  path->string_len += str_len;
+  path->string_len += file_str.len;
 
   return CFF_ERR_NONE;
 }
 
 cff_err_e cff_path_push_file(path_builder *path, const char *file,
-                             cff_allocator_t allocator) {
+                             cff_allocator allocator) {
   if (path->isFile)
     return CFF_ERR_INVALID_OPERATION;
 
@@ -128,27 +124,25 @@ cff_err_e cff_path_push_file(path_builder *path, const char *file,
   return CFF_ERR_NONE;
 }
 
-cff_err_e cff_path_pop(path_builder *path, cff_allocator_t allocator) {
+cff_err_e cff_path_pop(path_builder *path, cff_allocator allocator) {
 
   if (path->paths.count == 0)
     return CFF_ERR_INVALID_OPERATION;
 
-  char data[MAX_PATH] = {0};
+  cff_string data;
   cff_vector_get_ref(path->paths, path->paths.count - 1, (uintptr_t *)(&data));
-
-  uint64_t len = strlen(data);
 
   cff_err_e err = cff_vector_pop_back(&path->paths, allocator);
 
   if (err != CFF_ERR_NONE)
     return err;
 
-  path->string_len -= len;
+  path->string_len -= data.len;
 
   return CFF_ERR_NONE;
 }
 
-cff_err_e cff_path_destroy(path_builder *path, cff_allocator_t allocator) {
+cff_err_e cff_path_destroy(path_builder *path, cff_allocator allocator) {
   cff_err_e err = cff_vector_destroy(path->paths, allocator);
   if (err != CFF_ERR_NONE)
     return err;
@@ -158,7 +152,7 @@ cff_err_e cff_path_destroy(path_builder *path, cff_allocator_t allocator) {
   return CFF_ERR_NONE;
 }
 
-cff_string cff_path_to_string(path_builder path, cff_allocator_t allocator) {
+cff_string cff_path_to_string(path_builder path, cff_allocator allocator) {
 
   cff_string str = cff_string_join((cff_string *)(path.paths.buffer),
                                    (char)dir_sep, path.paths.count, allocator);

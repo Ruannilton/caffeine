@@ -1,70 +1,35 @@
 #pragma once
-#include "../platform/caffeine_platform.h"
+#include "../caffeine_types.h"
 
-/**
- * @struct cff_allocator_t
- * @brief Represents a memory allocator with function pointers for memory
- * management.
- */
-typedef struct {
-  void *context; /**< The context associated with the allocator. */
-  void *(*allocate)(
-      void *context,
-      cff_size size); /**< Function pointer for memory allocation. */
-  void (*release)(
-      void *context,
-      void *ptr); /**< Function pointer for releasing allocated memory. */
-  void *(*reallocate)(
-      void *context, void *ptr,
-      cff_size size); /**< Function pointer for reallocating memory. */
-  cff_size (*get_size)(void *context,
-                       void *ptr); /**< Function pointer for retrieving the size
-                                      of allocated memory. */
-} cff_allocator_t;
+struct cff_allocator_t;
 
-extern const cff_allocator_t *cff_global_allocator;
+typedef struct cff_allocator_t *cff_allocator;
 
-/**
- * @brief Allocates memory using the specified allocator.
- *
- * @param alloc The allocator to use for memory allocation.
- * @param size The size of the memory to allocate.
- * @return A pointer to the allocated memory.
- */
-inline void *cff_allocator_allocate(cff_allocator_t *alloc, cff_size size) {
-  return alloc->allocate(alloc->context, size);
-}
+#define CFF_GLOBAL_ALLOC (cff_memory_get_global())
 
-/**
- * @brief Releases memory using the specified allocator.
- *
- * @param alloc The allocator to use for memory release.
- * @param ptr The pointer to the memory to release.
- */
-inline void cff_allocator_release(cff_allocator_t *alloc, void *ptr) {
-  alloc->release(alloc->context, ptr);
-}
+cff_allocator cff_memory_get_global();
 
-/**
- * @brief Reallocates memory using the specified allocator.
- *
- * @param alloc The allocator to use for memory reallocation.
- * @param ptr The pointer to the memory to reallocate.
- * @param size The new size of the memory.
- * @return A pointer to the reallocated memory.
- */
-inline void *cff_allocator_reallocate(cff_allocator_t *alloc, void *ptr,
-                                      cff_size size) {
-  return alloc->reallocate(alloc->context, ptr, size);
-}
+CAFF_API cff_err_e cff_memory_init();
+CAFF_API cff_err_e cff_memory_end();
 
-/**
- * @brief Retrieves the size of allocated memory using the specified allocator.
- *
- * @param alloc The allocator to use for retrieving the size.
- * @param ptr The pointer to the allocated memory.
- * @return The size of the allocated memory.
- */
-inline cff_size cff_allocator_get_size(cff_allocator_t *alloc, void *ptr) {
-  return alloc->get_size(alloc->context, ptr);
-}
+cff_err_e cff_memory_alloc(cff_size size, uintptr_t *out);
+cff_err_e cff_memory_realloc(uintptr_t ptr, cff_size size, uintptr_t *out);
+cff_err_e cff_memory_release(uintptr_t ptr);
+cff_err_e cff_memory_get_size(uintptr_t ptr, cff_size *size);
+
+cff_err_e cff_allocator_alloc(cff_allocator alloc, cff_size size,
+                              uintptr_t *out);
+
+cff_err_e cff_allocator_realloc(cff_allocator alloc, uintptr_t ptr,
+                                cff_size size, uintptr_t *out);
+cff_err_e cff_allocator_release(cff_allocator alloc, uintptr_t ptr);
+
+cff_err_e cff_allocator_get_size(cff_allocator alloc, uintptr_t ptr,
+                                 cff_size *size);
+
+void cff_mem_copy(const void *from, void *dest, uint64_t size);
+void cff_mem_move(const void *from, void *dest, uint64_t size);
+bool cff_mem_cmp(const void *const from, const void *const dest, uint64_t size);
+void cff_mem_set(const void *data, void *dest, uint64_t data_size,
+                 uint64_t buffer_lenght);
+void cff_mem_zero(void *dest, uint64_t data_size, uint64_t buffer_lenght);

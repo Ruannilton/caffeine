@@ -11,7 +11,7 @@
 
 static inline cff_err_e cff_vector_resize(cff_vector_s *vector,
                                           uint64_t new_capacity,
-                                          cff_allocator_t allocator) {
+                                          cff_allocator allocator) {
 
   cff_err_e err = cff_container_resize((cff_container_s *)(vector),
                                        new_capacity, allocator);
@@ -26,8 +26,8 @@ static inline cff_err_e cff_vector_resize(cff_vector_s *vector,
 
 // TODO: handle errors
 static inline cff_err_e cff_vector_grow(cff_vector_s *vector,
-                                        cff_allocator_t allocator) {
-  uint64_t new_capacity = (uint64_t)(((double)vector->count) * GROW_TAX);
+                                        cff_allocator allocator) {
+  uint64_t new_capacity = (uint64_t)(((double)vector->capacity) * GROW_TAX);
 
   if (vector->count + 1 >= vector->capacity) {
     return cff_vector_resize(vector, new_capacity, allocator);
@@ -38,7 +38,7 @@ static inline cff_err_e cff_vector_grow(cff_vector_s *vector,
 
 // TODO: handle errors
 static inline cff_err_e cff_vector_shrink(cff_vector_s *vector,
-                                          cff_allocator_t allocator) {
+                                          cff_allocator allocator) {
   if (vector->count <= vector->capacity / 2) {
     return cff_vector_resize(vector, vector->count, allocator);
   }
@@ -47,7 +47,7 @@ static inline cff_err_e cff_vector_shrink(cff_vector_s *vector,
 }
 
 cff_vector_s cff_vector_create(cff_size data_size, uint64_t capacity,
-                               cff_allocator_t allocator) {
+                               cff_allocator allocator) {
   cff_container_s container =
       cff_container_create(data_size, capacity, allocator);
   cff_vector_s vector = TO_VECTOR(container);
@@ -59,7 +59,7 @@ cff_iterator_s cff_vector_get_iterator(cff_vector_s *vector) {
   return cff_container_get_iterator((cff_container_s *)vector);
 }
 
-cff_vector_s cff_vector_copy(cff_vector_s vector, cff_allocator_t allocator) {
+cff_vector_s cff_vector_copy(cff_vector_s vector, cff_allocator allocator) {
   cff_container_s container =
       cff_container_copy(TO_CONTAINER(vector), allocator);
   cff_vector_s out_vector = TO_VECTOR(container);
@@ -88,7 +88,7 @@ cff_err_e cff_vector_set(cff_vector_s vector, uint64_t index, uintptr_t in) {
 }
 
 cff_err_e cff_vector_insert(cff_vector_s *vector, uint64_t index, uintptr_t in,
-                            cff_allocator_t allocator) {
+                            cff_allocator allocator) {
   if (index > vector->count)
     return CFF_ERR_OUT_OF_BOUNDS;
 
@@ -111,7 +111,7 @@ cff_err_e cff_vector_insert(cff_vector_s *vector, uint64_t index, uintptr_t in,
 }
 
 cff_err_e cff_vector_remove(cff_vector_s *vector, uint64_t index,
-                            cff_allocator_t allocator) {
+                            cff_allocator allocator) {
   if (index >= vector->count)
     return CFF_ERR_OUT_OF_BOUNDS;
 
@@ -126,7 +126,7 @@ cff_err_e cff_vector_remove(cff_vector_s *vector, uint64_t index,
   return cff_vector_shrink(vector, allocator);
 }
 
-cff_err_e cff_vector_destroy(cff_vector_s vector, cff_allocator_t allocator) {
+cff_err_e cff_vector_destroy(cff_vector_s vector, cff_allocator allocator) {
   return cff_container_destroy(TO_CONTAINER(vector), allocator);
 }
 
@@ -153,7 +153,7 @@ cff_err_e cff_vector_sort(cff_vector_s vector, uint64_t start, uint64_t end,
 }
 
 cff_err_e cff_vector_reserve(cff_vector_s *vector, uint64_t capacity,
-                             cff_allocator_t allocator) {
+                             cff_allocator allocator) {
   uint64_t capacity_req = vector->count + capacity;
 
   if (capacity_req > vector->capacity) {
@@ -171,7 +171,7 @@ cff_err_e cff_vector_reserve(cff_vector_s *vector, uint64_t capacity,
 }
 
 cff_err_e cff_vector_push_back(cff_vector_s *vector, uintptr_t in,
-                               cff_allocator_t allocator) {
+                               cff_allocator allocator) {
   {
     cff_err_e err = cff_vector_grow(vector, allocator);
     if (err != CFF_ERR_NONE)
@@ -190,7 +190,7 @@ cff_err_e cff_vector_push_back(cff_vector_s *vector, uintptr_t in,
   return CFF_ERR_NONE;
 }
 
-cff_err_e cff_vector_pop_back(cff_vector_s *vector, cff_allocator_t allocator) {
+cff_err_e cff_vector_pop_back(cff_vector_s *vector, cff_allocator allocator) {
 
   if (vector->count > 0) {
     vector->count--;
@@ -201,7 +201,7 @@ cff_err_e cff_vector_pop_back(cff_vector_s *vector, cff_allocator_t allocator) {
 }
 
 cff_err_e cff_vector_push_front(cff_vector_s *vector, uintptr_t in,
-                                cff_allocator_t allocator) {
+                                cff_allocator allocator) {
 
   {
     cff_err_e err = cff_vector_grow(vector, allocator);
@@ -220,8 +220,7 @@ cff_err_e cff_vector_push_front(cff_vector_s *vector, uintptr_t in,
   return CFF_ERR_NONE;
 }
 
-cff_err_e cff_vector_pop_front(cff_vector_s *vector,
-                               cff_allocator_t allocator) {
+cff_err_e cff_vector_pop_front(cff_vector_s *vector, cff_allocator allocator) {
 
   if (vector->count <= 0)
     return CFF_ERR_INVALID_OPERATION;

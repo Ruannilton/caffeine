@@ -11,7 +11,7 @@
 
 static inline cff_err_e cff_ord_vector_resize(cff_ord_vector_s *vector,
                                               uint64_t new_capacity,
-                                              cff_allocator_t allocator) {
+                                              cff_allocator allocator) {
 
   cff_err_e err = cff_ord_container_resize((cff_ord_container_s *)(vector),
                                            new_capacity, allocator);
@@ -25,7 +25,7 @@ static inline cff_err_e cff_ord_vector_resize(cff_ord_vector_s *vector,
 }
 
 static inline cff_err_e cff_ord_vector_shrink(cff_ord_vector_s *vector,
-                                              cff_allocator_t allocator) {
+                                              cff_allocator allocator) {
   if (vector->count <= vector->capacity / 2) {
     return cff_ord_vector_resize(vector, vector->count, allocator);
   }
@@ -35,7 +35,7 @@ static inline cff_err_e cff_ord_vector_shrink(cff_ord_vector_s *vector,
 cff_ord_vector_s cff_ord_vector_create(
     cff_size data_size, uint64_t capacity,
     cff_ord_e (*comparer_fn)(uintptr_t a, uintptr_t b, cff_size data_size),
-    cff_allocator_t allocator) {
+    cff_allocator allocator) {
   cff_ord_container_s container =
       cff_ord_container_create(data_size, capacity, comparer_fn, allocator);
   cff_ord_vector_s vector = TO_VECTOR(container);
@@ -48,7 +48,7 @@ cff_iterator_s cff_ord_vector_get_iterator(cff_ord_vector_s *vector) {
 }
 
 cff_ord_vector_s cff_ord_vector_copy(cff_ord_vector_s vector,
-                                     cff_allocator_t allocator) {
+                                     cff_allocator allocator) {
   cff_ord_container_s container =
       cff_ord_container_copy(TO_CONTAINER(vector), allocator);
   cff_ord_vector_s out_vector = TO_VECTOR(container);
@@ -71,7 +71,7 @@ cff_err_e cff_ord_vector_get_ref(cff_ord_vector_s vector, uint64_t index,
 }
 
 cff_err_e cff_ord_vector_add(cff_ord_vector_s *vector, uintptr_t in,
-                             uint64_t *out_index, cff_allocator_t allocator) {
+                             uint64_t *out_index, cff_allocator allocator) {
   if (in >= vector->count)
     return CFF_ERR_OUT_OF_BOUNDS;
   cff_ord_container_s c = TO_CONTAINER(vector);
@@ -80,7 +80,7 @@ cff_err_e cff_ord_vector_add(cff_ord_vector_s *vector, uintptr_t in,
 }
 
 cff_err_e cff_ord_vector_remove(cff_ord_vector_s *vector, uint64_t index,
-                                cff_allocator_t allocator) {
+                                cff_allocator allocator) {
   if (index >= vector->count)
     return CFF_ERR_OUT_OF_BOUNDS;
 
@@ -97,7 +97,7 @@ cff_err_e cff_ord_vector_remove(cff_ord_vector_s *vector, uint64_t index,
 }
 
 cff_err_e cff_ord_vector_destroy(cff_ord_vector_s vector,
-                                 cff_allocator_t allocator) {
+                                 cff_allocator allocator) {
   return cff_ord_container_destroy(TO_CONTAINER(vector), allocator);
 }
 
@@ -119,7 +119,7 @@ void cff_ord_vector_fill(cff_ord_vector_s vector, uintptr_t value,
 }
 
 cff_err_e cff_ord_vector_reserve(cff_ord_vector_s *vector, uint64_t capacity,
-                                 cff_allocator_t allocator) {
+                                 cff_allocator allocator) {
   uint64_t capacity_req = vector->count + capacity;
 
   if (capacity_req > vector->capacity) {

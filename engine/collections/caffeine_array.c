@@ -8,7 +8,7 @@
 #define TO_ARRAY(X) (*(cff_array_s *)(&X))
 
 cff_array_s cff_array_create(cff_size data_size, uint64_t capacity,
-                             cff_allocator_t allocator) {
+                             cff_allocator allocator) {
   cff_container_s container =
       cff_container_create(data_size, capacity, allocator);
   cff_array_s array = TO_ARRAY(container);
@@ -19,7 +19,7 @@ cff_iterator_s cff_array_get_iterator(cff_array_s *array) {
   return cff_container_get_iterator((cff_container_s *)array);
 }
 
-cff_array_s cff_array_copy(cff_array_s array, cff_allocator_t allocator) {
+cff_array_s cff_array_copy(cff_array_s array, cff_allocator allocator) {
   cff_container_s container =
       cff_container_copy(TO_CONTAINER(array), allocator);
   cff_array_s out_array = TO_ARRAY(container);
@@ -46,7 +46,7 @@ cff_err_e cff_array_set(cff_array_s array, uint64_t index, uintptr_t in) {
 }
 
 cff_err_e cff_array_insert(cff_array_s *array, uint64_t index, uintptr_t in,
-                           cff_allocator_t allocator) {
+                           cff_allocator allocator) {
   if (index > array->capacity)
     return CFF_ERR_OUT_OF_BOUNDS;
 
@@ -54,14 +54,14 @@ cff_err_e cff_array_insert(cff_array_s *array, uint64_t index, uintptr_t in,
 }
 
 cff_err_e cff_array_remove(cff_array_s *array, uint64_t index,
-                           cff_allocator_t allocator) {
+                           cff_allocator allocator) {
   if (index >= array->capacity)
     return CFF_ERR_OUT_OF_BOUNDS;
 
   return cff_container_remove(*(cff_container_s *)(array), index);
 }
 
-cff_err_e cff_array_destroy(cff_array_s array, cff_allocator_t allocator) {
+cff_err_e cff_array_destroy(cff_array_s array, cff_allocator allocator) {
   return cff_container_destroy(TO_CONTAINER(array), allocator);
 }
 

@@ -17,13 +17,15 @@ static bool cff_container_get_item_ref(void *ptr, uint64_t index,
 }
 
 cff_container_s cff_container_create(cff_size data_size, uint64_t capacity,
-                                     cff_allocator_t allocator) {
+                                     cff_allocator allocator) {
 
-  uintptr_t buffer_address = (uintptr_t)(
-      cff_allocator_allocate(&allocator, (cff_size)(capacity * data_size)));
+  uintptr_t buffer_address = 0;
 
-  if (buffer_address == 0) {
-    return (cff_container_s){.error_code = CFF_ERR_ALLOC};
+  cff_err_e alloc_e = cff_allocator_alloc(
+      allocator, (cff_size)(capacity * data_size), &buffer_address);
+
+  if (alloc_e != CFF_ERR_NONE) {
+    return (cff_container_s){.error_code = alloc_e};
   }
 
   return (cff_container_s){.data_size = data_size,
@@ -122,26 +124,31 @@ cff_err_e cff_container_remove(cff_container_s container, uint64_t index) {
 }
 
 cff_err_e cff_container_destroy(cff_container_s container,
-                                cff_allocator_t allocator) {
+                                cff_allocator allocator) {
   if (container.buffer == 0)
     return CFF_ERR_INVALID_OPERATION;
 
-  cff_allocator_release(&allocator, (void *)(container.buffer));
+  cff_allocator_release(allocator, container.buffer);
 
   return CFF_ERR_NONE;
 }
 
 cff_err_e cff_container_resize(cff_container_s *container,
-                               uint64_t new_capacity,
-                               cff_allocator_t allocator) {
+                               uint64_t new_capacity, cff_allocator allocator) {
+
   cff_size new_size = container->data_size * (cff_size)new_capacity;
-  void *old_buffer = (void *)container->buffer;
-  void *new_buffer = cff_allocator_reallocate(&allocator, old_buffer, new_size);
 
-  if (new_buffer == NULL)
-    return CFF_ERR_REALLOC;
+  uintptr_t old_buffer = container->buffer;
 
-  container->buffer = (uintptr_t)new_buffer;
+  uintptr_t new_buffer = 0;
+
+  cff_err_e new_buffer_error =
+      cff_allocator_realloc(allocator, old_buffer, new_size, &new_buffer);
+
+  if (IS_ERROR(new_buffer_error))
+    return new_buffer_error;
+
+  container->buffer = new_buffer;
   container->capacity = new_capacity;
 
   return CFF_ERR_NONE;
@@ -171,7 +178,7 @@ cff_iterator_s cff_container_get_iterator(cff_container_s *container) {
 }
 
 cff_container_s cff_container_copy(cff_container_s container,
-                                   cff_allocator_t allocator) {
+                                   cff_allocator allocator) {
   cff_container_s new_container =
       cff_container_create(container.data_size, container.capacity, allocator);
 

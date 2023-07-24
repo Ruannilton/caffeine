@@ -1,13 +1,28 @@
 #include "caffeine_set.h"
 
 static cff_set_s *_set_resize(cff_set_s *set, uint64_t new_size,
-                              cff_allocator_t allocator) {
+                              cff_allocator allocator) {
 
-  uintptr_t data_buffer = (uintptr_t)(cff_allocator_allocate(
-      &allocator, (cff_size)(new_size * set->data_size)));
+  uintptr_t data_buffer = 0;
+  cff_err_e dt_buffer_err = cff_allocator_alloc(
+      allocator, (cff_size)(new_size * set->data_size), &data_buffer);
 
-  bool *used_buffer = (bool *)(cff_allocator_allocate(
-      &allocator, (cff_size)(new_size * sizeof(bool))));
+  if (IS_ERROR(dt_buffer_err)) {
+    set->error_code = dt_buffer_err;
+    return set;
+  }
+
+  bool *used_buffer = NULL;
+
+  cff_err_e used_err =
+      cff_allocator_alloc(allocator, (cff_size)(new_size * sizeof(bool)),
+                          (uintptr_t *)(&used_buffer));
+
+  if (IS_ERROR(used_err)) {
+    set->error_code = used_err;
+    cff_allocator_release(allocator, data_buffer);
+    return set;
+  }
 
   uint64_t max_collision_count = 0;
 
@@ -35,8 +50,8 @@ static cff_set_s *_set_resize(cff_set_s *set, uint64_t new_size,
                  set->data_size);
   }
 
-  cff_allocator_release(&allocator, set->data);
-  cff_allocator_release(&allocator, set->used_slot);
+  cff_allocator_release(allocator, (uintptr_t)set->data);
+  cff_allocator_release(allocator, (uintptr_t)set->used_slot);
 
   set->collision_count = max_collision_count;
   set->data = (void *)data_buffer;
@@ -66,24 +81,27 @@ static bool cff_set_get_item_ref(void *ptr, uint64_t index, uintptr_t *out) {
 
 cff_set_s cff_set_create(cff_size data_size, uint64_t capacity,
                          cff_comparer_function comparer_fn,
-                         cff_hash_function hash_fn, cff_allocator_t allocator) {
+                         cff_hash_function hash_fn, cff_allocator allocator) {
 
-  void *data = cff_allocator_allocate(&allocator, data_size * capacity);
+  uintptr_t data = 0;
+  cff_err_e dt_error =
+      cff_allocator_alloc(allocator, data_size * capacity, &data);
 
-  if (data == NULL)
-    return (cff_set_s){.error_code = CFF_ERR_ALLOC};
+  if (IS_ERROR(dt_error)) {
+    return (cff_set_s){.error_code = dt_error};
+  }
 
   return (cff_set_s){.capacity = capacity,
                      .data_cmp_fn = comparer_fn,
                      .hash_fn = hash_fn,
                      .error_code = CFF_ERR_NONE,
                      .data_size = data_size,
-                     .data = data,
+                     .data = (void *)data,
                      .count = 0,
                      .collision_count = 0};
 }
 
-bool cff_set_add(cff_set_s *set, uintptr_t value, cff_allocator_t allocator) {
+bool cff_set_add(cff_set_s *set, uintptr_t value, cff_allocator allocator) {
 
   if ((float)set->count / set->capacity >= 0.75f) {
     set = _set_resize(set, set->capacity * 2, allocator);
@@ -120,8 +138,7 @@ bool cff_set_add(cff_set_s *set, uintptr_t value, cff_allocator_t allocator) {
   return true;
 }
 
-bool cff_set_remove(cff_set_s *set, uintptr_t value,
-                    cff_allocator_t allocator) {
+bool cff_set_remove(cff_set_s *set, uintptr_t value, cff_allocator allocator) {
   uint64_t collision = 0;
 
   uint64_t entry_index =
@@ -178,13 +195,13 @@ void cff_set_clear(cff_set_s *set) {
   set->collision_count = 0;
 }
 
-void cff_set_destroy(cff_set_s *set, cff_allocator_t allocator) {
-  cff_allocator_release(&allocator, set->used_slot);
-  cff_allocator_release(&allocator, set->data);
+void cff_set_destroy(cff_set_s *set, cff_allocator allocator) {
+  cff_allocator_release(allocator, (uintptr_t)set->used_slot);
+  cff_allocator_release(allocator, (uintptr_t)set->data);
   *set = (cff_set_s){0};
 }
 
-cff_set_s cff_set_copy(cff_set_s set, cff_allocator_t allocator) {
+cff_set_s cff_set_copy(cff_set_s set, cff_allocator allocator) {
   uint64_t new_size = set.count * 2;
 
   cff_set_s new_set = cff_set_create(set.data_size, new_size, set.data_cmp_fn,
@@ -200,7 +217,7 @@ cff_set_s cff_set_copy(cff_set_s set, cff_allocator_t allocator) {
   return new_set;
 }
 
-cff_set_s cff_set_clone(cff_set_s set, cff_allocator_t allocator) {
+cff_set_s cff_set_clone(cff_set_s set, cff_allocator allocator) {
   cff_set_s new_set = cff_set_create(set.data_size, set.capacity,
                                      set.data_cmp_fn, set.hash_fn, allocator);
 

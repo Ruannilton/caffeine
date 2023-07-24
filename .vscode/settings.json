@@ -9,6 +9,8 @@
         "caffeine_filesystem.h": "c",
         "caffeine_vector.h": "c",
         "caffeine_container_type.h": "c",
-        "caffeine_container_functions.h": "c"
+        "caffeine_container_functions.h": "c",
+        "caffeine.h": "c",
+        "cff_allocator.h": "c"
     }
 }

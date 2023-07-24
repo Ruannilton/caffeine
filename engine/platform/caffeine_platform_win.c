@@ -62,15 +62,8 @@ void cff_stack_free(void *ptr) {
 #endif
 }
 
-uint64_t cff_get_size(void *ptr) {
-  assert(ptr != NULL);
-
-#ifdef CFF_MSVC
-  return (uint64_t)_msize(ptr);
-#else
-  return (uint64_t)(0 / 0);
-#endif
-}
+// TODO: implement
+uint64_t cff_get_size(void *ptr) { return 0; }
 
 void cff_mem_copy(const void *from, void *dest, uint64_t size) {
 
