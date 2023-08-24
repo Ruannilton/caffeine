@@ -21,7 +21,10 @@
 			"caffeine_container_functions.h": "c",
 			"xmemory": "c",
 			"assert.h": "c",
-			"caffeine_types.h": "c"
+			"caffeine_types.h": "c",
+			"caffeine_entry.h": "c",
+			"caffeine_logging.h": "c",
+			"caffeine.h": "c"
 		}
 	}
 }
