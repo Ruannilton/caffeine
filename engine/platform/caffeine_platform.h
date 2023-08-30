@@ -1,6 +1,18 @@
 #pragma once
 
 #include "../caffeine_types.h"
+#include "../core/caffeine_events.h"
+
+typedef struct {
+    void* internal_platform;
+} platform;
+
+bool cff_platform_init(platform *plat, char* name);
+
+bool cff_platform_poll_events(platform *plat);
+
+void cff_platform_shutdown(platform *plat);
+
 
 /**
  * @brief Allocates memory using the default allocator.
