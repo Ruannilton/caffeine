@@ -8,6 +8,7 @@ typedef struct {
   cff_vector_s paths;
   bool isFile;
   uint64_t string_len;
+  cff_err_e error_code;
 } path_builder;
 
 typedef struct {

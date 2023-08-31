@@ -20,7 +20,6 @@ void caffeine_application_shutdown();
 
 static bool _caffeine_on_mouse_event(cff_event_data data)
 {
-    caff_log_info("Mouse position: %d , %d\n", data.mouse_x, data.mouse_y);
     return true;
 }
 
@@ -32,19 +31,31 @@ static bool _caffeine_on_quit(cff_event_data data)
 
 bool caffeine_application_init(char *app_name)
 {
+    caff_log_terminal(LOG_LEVEL_TRACE, "Init application\n");
+
     _application.name = app_name;
     _application.is_running = true;
 
     cff_memory_init();
-    caff_log_init();
+
+    if (!caff_log_init())
+    {
+        caff_log(LOG_LEVEL_ERROR, "Failed to initialize log system\n");
+        return false;
+    }
+
     caffeine_event_init();
 
     if (cff_platform_init(&_application.platform, app_name))
     {
         caffeine_event_register_listener(EVENT_MOUSE_MOVE, _caffeine_on_mouse_event);
         caffeine_event_register_listener(EVENT_QUIT, _caffeine_on_quit);
+
+        caff_log(LOG_LEVEL_TRACE, "Application initalized\n");
         return true;
     }
+
+    caff_log(LOG_LEVEL_ERROR, "Failed to initialize platform\n");
 
     _application.is_running = false;
     caffeine_event_shutdown();
@@ -56,6 +67,7 @@ bool caffeine_application_init(char *app_name)
 
 bool caffeine_application_run()
 {
+    caff_log(LOG_LEVEL_TRACE, "Application running\n");
 
     while (_application.is_running)
     {
@@ -64,9 +76,9 @@ bool caffeine_application_run()
 
     caffeine_application_shutdown();
 
+    caff_log(LOG_LEVEL_TRACE, "Application down\n");
     return true;
 }
-
 
 void caffeine_application_shutdown()
 {

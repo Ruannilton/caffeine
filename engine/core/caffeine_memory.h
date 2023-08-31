@@ -9,8 +9,8 @@ typedef struct cff_allocator_t *cff_allocator;
 
 cff_allocator cff_memory_get_global();
 
-cff_err_e cff_memory_init();
-cff_err_e cff_memory_end();
+void cff_memory_init();
+void cff_memory_end();
 
 cff_err_e cff_memory_alloc(cff_size size, uintptr_t *out);
 cff_err_e cff_memory_realloc(uintptr_t ptr, cff_size size, uintptr_t *out);

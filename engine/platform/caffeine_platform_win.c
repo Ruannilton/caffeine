@@ -1,4 +1,5 @@
 #include "caffeine_platform.h"
+#include "../core/caffeine_logging.h"
 
 #ifdef CFF_WINDOWS
 
@@ -23,14 +24,12 @@ typedef struct
   HWND hwnd;
 } win_platform;
 
-LRESULT CALLBACK win32_proccess_message(HWND hwnd, uint32_t mesage, WPARAM w_param, LPARAM l_param);
+LRESULT CALLBACK win32_proccess_message(HWND hwnd, UINT mesage, WPARAM w_param, LPARAM l_param);
 
 static HWND _cff_windowns_create_window(HINSTANCE h_instance, LPCSTR window_title)
 {
   HICON icon = LoadIcon(h_instance, IDI_APPLICATION);
   WNDCLASSA window_class = {0};
-
-  // cff_mem_zero(&window_class, sizeof(WNDCLASSA), 1);
 
   window_class.style = CS_DBLCLKS;
   window_class.lpfnWndProc = win32_proccess_message;
@@ -44,9 +43,12 @@ static HWND _cff_windowns_create_window(HINSTANCE h_instance, LPCSTR window_titl
 
   if (!RegisterClassA(&window_class))
   {
+    caff_log(LOG_LEVEL_ERROR, "Failed to get register window class\n");
     MessageBoxA(0, "Window registration failed", "Error", MB_ICONEXCLAMATION | MB_OK);
     return NULL;
   }
+
+  caff_log(LOG_LEVEL_TRACE, "Window class registered: %s\n", window_class_name);
 
   int32_t client_x = 800;
   int32_t client_y = 600;
@@ -59,46 +61,73 @@ static HWND _cff_windowns_create_window(HINSTANCE h_instance, LPCSTR window_titl
   int32_t window_height = client_height;
 
   uint32_t window_style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
+  uint32_t window_ex_style = WS_EX_APPWINDOW;
 
   RECT border_rect = {0};
-  AdjustWindowRectEx(&border_rect, window_style, 0, WS_EX_APPWINDOW);
+  AdjustWindowRectEx(&border_rect, window_style, 0, window_ex_style);
 
   window_x += border_rect.left;
   window_y += border_rect.top;
   window_width += border_rect.right - border_rect.left;
-  window_x += border_rect.bottom - border_rect.top;
+  window_height += border_rect.bottom - border_rect.top;
+
+  caff_log(LOG_LEVEL_TRACE, "Window size: %d, %d, %d, %d\n", window_x, window_y, window_width, window_height);
 
   HWND window_hwnd = CreateWindowExA(
-      WS_EX_APPWINDOW, window_class_name, window_title,
+      window_ex_style, window_class_name, window_title,
       window_style, window_x, window_y, window_width,
       window_height, 0, 0, h_instance, 0);
 
-  if (window_hwnd == NULL)
+  if (window_hwnd == INVALID_HANDLE_VALUE || window_hwnd == 0)
   {
     MessageBoxA(0, "Window registration failed", "Error", MB_ICONEXCLAMATION | MB_OK);
     return NULL;
   }
 
-  uint32_t show_window = true ? SW_SHOW : SW_SHOWNOACTIVATE;
+  caff_log(LOG_LEVEL_TRACE, "Window handle: %lld\n", window_hwnd);
+
+  int show_window = true ? SW_SHOW : SW_SHOWNOACTIVATE;
 
   ShowWindow(window_hwnd, show_window);
+
+  caff_log(LOG_LEVEL_TRACE, "Window open\n");
 
   return window_hwnd;
 }
 
 bool cff_platform_init(platform *plat, char *name)
 {
+  caff_log(LOG_LEVEL_TRACE, "Init platform system\n");
+
   win_platform *win_plat = (win_platform *)cff_malloc((uint64_t)sizeof(win_platform));
 
-  win_plat->h_instance = GetModuleHandle(0);
+  if (win_plat == NULL)
+  {
+    caff_log(LOG_LEVEL_ERROR, "Failed to allocate platform\n");
+    return false;
+  }
+
+  win_plat->h_instance = GetModuleHandleA(0);
+
+  if (win_plat->h_instance == INVALID_HANDLE_VALUE)
+  {
+    caff_log(LOG_LEVEL_ERROR, "Failed to get module handle\n");
+    return false;
+  }
 
   win_plat->hwnd = _cff_windowns_create_window(win_plat->h_instance, (LPCSTR)name);
 
   if (win_plat->hwnd == NULL)
+  {
+    caff_log(LOG_LEVEL_ERROR, "Failed to create window\n");
     return false;
+  }
+
+  caff_log(LOG_LEVEL_TRACE, "Window created\n");
 
   plat->internal_platform = (void *)win_plat;
 
+  caff_log(LOG_LEVEL_TRACE, "Platform initialized\n");
   return true;
 }
 
@@ -111,6 +140,9 @@ void cff_platform_shutdown(platform *plat)
     DestroyWindow(win_plat->hwnd);
     win_plat->hwnd = 0;
   }
+
+  cff_free(win_plat);
+  plat->internal_platform = 0;
 }
 
 bool cff_platform_poll_events(platform *plat)
@@ -295,7 +327,7 @@ const char *cff_get_app_data_directory()
   return NULL;
 }
 
-LRESULT CALLBACK win32_proccess_message(HWND hwnd, uint32_t message, WPARAM w_param, LPARAM l_param)
+LRESULT CALLBACK win32_proccess_message(HWND hwnd, UINT message, WPARAM w_param, LPARAM l_param)
 {
   switch (message)
   {
