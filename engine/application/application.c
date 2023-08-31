@@ -31,7 +31,7 @@ static bool _caffeine_on_quit(cff_event_data data)
 
 bool caffeine_application_init(char *app_name)
 {
-    caff_log_terminal(LOG_LEVEL_TRACE, "Init application\n");
+    caff_log(LOG_LEVEL_TRACE, "Init application\n");
 
     _application.name = app_name;
     _application.is_running = true;

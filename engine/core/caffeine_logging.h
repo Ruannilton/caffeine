@@ -23,5 +23,3 @@ void caff_log_end();
   caff_log(LOG_LEVEL_TRACE, message, __VA_ARGS__)
 
 CAFF_API void caff_log(log_level level, const char *message, ...);
-
-CAFF_API void caff_log_terminal(log_level level, const char *message, ...);
