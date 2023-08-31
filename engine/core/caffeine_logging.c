@@ -1,7 +1,6 @@
 #include "caffeine_logging.h"
 #include "../platform/caffeine_platform.h"
 #include "caffeine_memory.h"
-#include "caffeine_string.h"
 #include <stdarg.h>
 #include <stdio.h>
 
