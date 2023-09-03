@@ -6,7 +6,6 @@
 #include <Windows.h>
 #include <Windowsx.h>
 #include <assert.h>
-#include <malloc.h>
 #include <shlobj.h>
 #include <stdarg.h>
 #include <stdio.h>
