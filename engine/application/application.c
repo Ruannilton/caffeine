@@ -13,22 +13,35 @@ typedef struct
     char *name;
     bool is_running;
     bool is_paused;
-    platform platform;
 } application;
 
 static application _application = {0};
 
 void caffeine_application_shutdown();
 
-static bool _caffeine_on_mouse_event(cff_event_data data)
+static bool _mouse_move(cff_event_data data)
 {
+    caff_log(LOG_LEVEL_TRACE, "Mouse Move: %d, %d\n", data.mouse_x, data.mouse_y);
     return true;
 }
 
-static bool _caffeine_on_quit(cff_event_data data)
+static bool _key_press(cff_event_data data)
 {
-    _application.is_running = false;
+    caff_log(LOG_LEVEL_TRACE, "Key Press: %c\n", data.key_code);
     return true;
+}
+
+static bool _key_release(cff_event_data data)
+{
+    caff_log(LOG_LEVEL_TRACE, "Key Release: %c\n", data.key_code);
+    return true;
+}
+
+static void _caffeine_on_quit()
+{
+    caff_log(LOG_LEVEL_TRACE, "Quit application\n");
+    caffeine_event_fire(EVENT_QUIT, (cff_event_data){0});
+    _application.is_running = false;
 }
 
 bool caffeine_application_init(char *app_name)
@@ -51,10 +64,13 @@ bool caffeine_application_init(char *app_name)
 
     caff_input_init();
 
-    if (cff_platform_init(&_application.platform, app_name))
+    if (cff_platform_init(app_name))
     {
-        caffeine_event_register_listener(EVENT_MOUSE_MOVE, _caffeine_on_mouse_event);
-        caffeine_event_register_listener(EVENT_QUIT, _caffeine_on_quit);
+        cff_platform_set_quit_clkb(_caffeine_on_quit);
+
+        caffeine_event_register_listener(EVENT_KEY_DOWN, _key_press);
+        caffeine_event_register_listener(EVENT_KEY_UP, _key_release);
+        caffeine_event_register_listener(EVENT_MOUSE_MOVE, _mouse_move);
 
         caff_log(LOG_LEVEL_TRACE, "Application initalized\n");
         return true;
@@ -73,7 +89,7 @@ bool caffeine_application_run()
 
     while (_application.is_running)
     {
-        cff_platform_poll_events(&_application.platform);
+        cff_platform_poll_events();
 
         if (_application.is_paused)
             continue;
@@ -91,10 +107,8 @@ void caffeine_application_shutdown()
 {
     _application.is_running = false;
     _application.is_paused = true;
-    caffeine_event_unregister_listener(EVENT_MOUSE_MOVE, _caffeine_on_mouse_event);
-    caffeine_event_unregister_listener(EVENT_QUIT, _caffeine_on_quit);
 
-    cff_platform_shutdown(&_application.platform);
+    cff_platform_shutdown();
 
     caff_input_end();
     caffeine_event_shutdown();

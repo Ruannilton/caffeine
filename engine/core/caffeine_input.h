@@ -153,8 +153,3 @@ typedef enum button_state
 void caff_input_init(void);
 void caff_input_end(void);
 void caff_input_update(void);
-
-void caff_input_set_key(keys key, button_state state);
-void caff_input_set_mouse_button(buttons button, button_state state);
-void caff_input_set_mouse_position(uint32_t x, uint32_t y);
-void caff_input_set_mouse_scroll(int32_t scroll);

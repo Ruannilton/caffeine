@@ -12,16 +12,30 @@
 
 #define PRINT_BUFER_LEN 3200
 
-static LPCSTR window_class_name = "caffeine_window_class";
-
-char app_directory[MAX_PATH] = {0};
-char root_directory[MAX_PATH] = {0};
-
 typedef struct
 {
   HINSTANCE h_instance;
   HWND hwnd;
-} win_platform;
+} platform;
+
+static LPCSTR window_class_name = "caffeine_window_class";
+static char app_directory[MAX_PATH] = {0};
+static char root_directory[MAX_PATH] = {0};
+static platform win_platform;
+
+void default_key_clkb(uint32_t key, uint32_t state);
+void default_mouse_button_clkb(uint32_t button, uint32_t state);
+void default_mouse_move_clkb(uint32_t x, uint32_t y);
+void default_mouse_scroll_clkb(int32_t dir);
+void default_quit(void);
+void default_resize(uint32_t width, uint32_t lenght);
+
+static cff_platform_key_clkb key_clbk = default_key_clkb;
+static cff_platform_mouse_button_clkb mouse_btn_clbk = default_mouse_button_clkb;
+static cff_platform_mouse_move_clkb mouse_move_clbk = default_mouse_move_clkb;
+static cff_platform_mouse_scroll_clkb mouse_scroll_clkb = default_mouse_scroll_clkb;
+static cff_platform_quit_clbk quit_clbk = default_quit;
+static cff_platform_resize_clbk resize_clbk = default_resize;
 
 LRESULT CALLBACK win32_proccess_message(HWND hwnd, UINT mesage, WPARAM w_param, LPARAM l_param);
 
@@ -94,29 +108,21 @@ static HWND _cff_windowns_create_window(HINSTANCE h_instance, LPCSTR window_titl
   return window_hwnd;
 }
 
-bool cff_platform_init(platform *plat, char *name)
+bool cff_platform_init(char *name)
 {
   caff_log(LOG_LEVEL_TRACE, "Init platform system\n");
 
-  win_platform *win_plat = (win_platform *)cff_malloc((uint64_t)sizeof(win_platform));
+  win_platform.h_instance = GetModuleHandleA(0);
 
-  if (win_plat == NULL)
-  {
-    caff_log(LOG_LEVEL_ERROR, "Failed to allocate platform\n");
-    return false;
-  }
-
-  win_plat->h_instance = GetModuleHandleA(0);
-
-  if (win_plat->h_instance == INVALID_HANDLE_VALUE)
+  if (win_platform.h_instance == INVALID_HANDLE_VALUE)
   {
     caff_log(LOG_LEVEL_ERROR, "Failed to get module handle\n");
     return false;
   }
 
-  win_plat->hwnd = _cff_windowns_create_window(win_plat->h_instance, (LPCSTR)name);
+  win_platform.hwnd = _cff_windowns_create_window(win_platform.h_instance, (LPCSTR)name);
 
-  if (win_plat->hwnd == NULL)
+  if (win_platform.hwnd == NULL)
   {
     caff_log(LOG_LEVEL_ERROR, "Failed to create window\n");
     return false;
@@ -124,27 +130,21 @@ bool cff_platform_init(platform *plat, char *name)
 
   caff_log(LOG_LEVEL_TRACE, "Window created\n");
 
-  plat->internal_platform = (void *)win_plat;
-
   caff_log(LOG_LEVEL_TRACE, "Platform initialized\n");
   return true;
 }
 
-void cff_platform_shutdown(platform *plat)
+void cff_platform_shutdown()
 {
-  win_platform *win_plat = (win_platform *)plat->internal_platform;
 
-  if (win_plat->hwnd != NULL)
+  if (win_platform.hwnd != NULL)
   {
-    DestroyWindow(win_plat->hwnd);
-    win_plat->hwnd = 0;
+    DestroyWindow(win_platform.hwnd);
+    win_platform.hwnd = 0;
   }
-
-  cff_free(win_plat);
-  plat->internal_platform = 0;
 }
 
-bool cff_platform_poll_events(platform *plat)
+bool cff_platform_poll_events()
 {
   MSG message;
   while (PeekMessageA(&message, NULL, 0, 0, PM_REMOVE))
@@ -154,6 +154,42 @@ bool cff_platform_poll_events(platform *plat)
   }
 
   return true;
+}
+
+void cff_platform_set_key_clbk(cff_platform_key_clkb clbk)
+{
+  if (clbk)
+    key_clbk = clbk;
+}
+
+void cff_platform_set_mouse_button_clkb(cff_platform_mouse_button_clkb clbk)
+{
+  if (clbk)
+    mouse_btn_clbk = clbk;
+}
+
+void cff_platform_set_mouse_move_clkb(cff_platform_mouse_move_clkb clbk)
+{
+  if (clbk)
+    mouse_move_clbk = clbk;
+}
+
+void cff_platform_set_mouse_scroll_clkb(cff_platform_mouse_scroll_clkb clbk)
+{
+  if (clbk)
+    mouse_scroll_clkb = clbk;
+}
+
+void cff_platform_set_quit_clkb(cff_platform_quit_clbk clbk)
+{
+  if (clbk)
+    quit_clbk = clbk;
+}
+
+void cff_platform_set_resize_clkb(cff_platform_resize_clbk clbk)
+{
+  if (clbk)
+    resize_clbk = clbk;
 }
 
 void cff_print_console(log_level level, char *message)
@@ -334,7 +370,7 @@ LRESULT CALLBACK win32_proccess_message(HWND hwnd, UINT message, WPARAM w_param,
     return 1;
 
   case WM_CLOSE:
-    caffeine_event_fire(EVENT_QUIT, (cff_event_data){0});
+    quit_clbk();
     return 0;
 
   case WM_DESTROY:
@@ -347,7 +383,7 @@ LRESULT CALLBACK win32_proccess_message(HWND hwnd, UINT message, WPARAM w_param,
     GetClientRect(hwnd, &r);
     uint32_t width = r.right - r.left;
     uint32_t left = r.bottom - r.top;
-    caffeine_event_fire(EVENT_RESIZE, (cff_event_data){.window_width = width, .window_height = left});
+    resize_clbk(width, left);
   }
   break;
 
@@ -356,7 +392,9 @@ LRESULT CALLBACK win32_proccess_message(HWND hwnd, UINT message, WPARAM w_param,
   case WM_KEYUP:
   case WM_SYSKEYUP:
   {
-    // bool pressed = message == WM_SYSKEYDOWN || message == WM_KEYDOWN;
+    uint32_t pressed = message == WM_SYSKEYDOWN || message == WM_KEYDOWN;
+    uint32_t key = (uint32_t)w_param;
+    key_clbk(key, pressed);
   }
   break;
 
@@ -364,29 +402,48 @@ LRESULT CALLBACK win32_proccess_message(HWND hwnd, UINT message, WPARAM w_param,
   {
     uint32_t x_pos = GET_X_LPARAM(l_param);
     uint32_t y_pos = GET_Y_LPARAM(l_param);
-    caffeine_event_fire(EVENT_MOUSE_MOVE, (cff_event_data){.mouse_x = x_pos, .mouse_y = y_pos});
+    mouse_move_clbk(x_pos, y_pos);
   }
   break;
 
   case WM_MOUSEWHEEL:
   {
-    uint32_t delta = GET_WHEEL_DELTA_WPARAM(w_param);
+    int32_t delta = GET_WHEEL_DELTA_WPARAM(w_param);
     if (delta != 0)
     {
       delta = (delta < 0) ? -1 : 1;
     }
-
-    caffeine_event_fire(EVENT_MOUSE_SCROLL, (cff_event_data){.mouse_scroll = delta});
+    mouse_scroll_clkb(delta);
   }
 
   case WM_LBUTTONDOWN:
-  case WM_MBUTTONDOWN:
-  case WM_RBUTTONDOWN:
   case WM_LBUTTONUP:
+  case WM_MBUTTONDOWN:
   case WM_MBUTTONUP:
+  case WM_RBUTTONDOWN:
   case WM_RBUTTONUP:
   {
-    // bool pressed = message == WM_LBUTTONDOWN || message == WM_MBUTTONDOWN || message == WM_RBUTTONDOWN;
+    uint32_t pressed = message == WM_LBUTTONDOWN || message == WM_MBUTTONDOWN || message == WM_RBUTTONDOWN;
+    uint32_t button = (uint32_t)-1;
+
+    switch (message)
+    {
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+      button = 0;
+      break;
+    case WM_MBUTTONDOWN:
+    case WM_MBUTTONUP:
+      button = 1;
+      break;
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
+      button = 2;
+      break;
+    }
+
+    if (button != (uint32_t)-1)
+      mouse_btn_clbk(button, pressed);
   }
   break;
   }

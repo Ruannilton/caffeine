@@ -38,6 +38,10 @@ void *cff_mem_alloc(uint64_t size)
     header->size = size;
     _mem_allocked += size;
 
+    char msg[64];
+    sprintf(msg, "Allocated: %llu\n", _mem_allocked);
+    cff_print_console(LOG_LEVEL_INFO, msg);
+
     ptr += sizeof(mem_header);
   }
   return (void *)ptr;

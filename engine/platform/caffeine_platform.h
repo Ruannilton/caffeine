@@ -1,18 +1,31 @@
 #pragma once
 
 #include "../caffeine_types.h"
-#include "../core/caffeine_events.h"
 
-typedef struct {
-    void* internal_platform;
-} platform;
+typedef void (*cff_platform_key_clkb)(uint32_t key, uint32_t state);
+typedef void (*cff_platform_mouse_button_clkb)(uint32_t button, uint32_t state);
+typedef void (*cff_platform_mouse_move_clkb)(uint32_t x, uint32_t y);
+typedef void (*cff_platform_mouse_scroll_clkb)(int32_t dir);
+typedef void (*cff_platform_quit_clbk)(void);
+typedef void (*cff_platform_resize_clbk)(uint32_t width, uint32_t lenght);
 
-bool cff_platform_init(platform *plat, char* name);
+bool cff_platform_init(char *name);
 
-bool cff_platform_poll_events(platform *plat);
+bool cff_platform_poll_events();
 
-void cff_platform_shutdown(platform *plat);
+void cff_platform_shutdown();
 
+void cff_platform_set_key_clbk(cff_platform_key_clkb clbk);
+
+void cff_platform_set_mouse_button_clkb(cff_platform_mouse_button_clkb clbk);
+
+void cff_platform_set_mouse_move_clkb(cff_platform_mouse_move_clkb clbk);
+
+void cff_platform_set_mouse_scroll_clkb(cff_platform_mouse_scroll_clkb clbk);
+
+void cff_platform_set_quit_clkb(cff_platform_quit_clbk clbk);
+
+void cff_platform_set_resize_clkb(cff_platform_resize_clbk clbk);
 
 /**
  * @brief Allocates memory using the default allocator.
