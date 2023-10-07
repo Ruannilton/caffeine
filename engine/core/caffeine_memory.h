@@ -1,6 +1,10 @@
 #pragma once
 #include "../caffeine_types.h"
 
+#define cff_new(T) ((T *)cff_mem_alloc(sizeof(T)))
+#define cff_new_arr(T, L) ((T *)cff_mem_alloc(sizeof(T) * (L)))
+#define cff_resize_arr(A, L) ((__typeof__(*A) *)cff_mem_realloc((void *)(A), sizeof(__typeof__(*A)) * (L)))
+
 void cff_memory_init();
 void cff_memory_end();
 

@@ -26,7 +26,12 @@
 			"caffeine_logging.h": "c",
 			"caffeine.h": "c",
 			"application.h": "c",
-			"caffeine_events.h": "c"
+			"caffeine_events.h": "c",
+			"stdint.h": "c",
+			"caffeine_ecs.h": "c",
+			"component_list.h": "c",
+			"archetype.h": "c",
+			"archetype_storage.h": "c"
 		}
 	}
 }

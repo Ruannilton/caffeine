@@ -7,6 +7,7 @@
 #include "../core/caffeine_memory.h"
 #include "../core/caffeine_events.h"
 #include "../core/caffeine_input.h"
+#include "../core/caffeine_ecs.h"
 
 typedef struct
 {
@@ -19,23 +20,7 @@ static application _application = {0};
 
 void caffeine_application_shutdown();
 
-static bool _mouse_move(cff_event_data data)
-{
-    caff_log(LOG_LEVEL_TRACE, "Mouse Move: %d, %d\n", data.mouse_x, data.mouse_y);
-    return true;
-}
-
-static bool _key_press(cff_event_data data)
-{
-    caff_log(LOG_LEVEL_TRACE, "Key Press: %c\n", data.key_code);
-    return true;
-}
-
-static bool _key_release(cff_event_data data)
-{
-    caff_log(LOG_LEVEL_TRACE, "Key Release: %c\n", data.key_code);
-    return true;
-}
+void ecs_setup_test();
 
 static void _caffeine_on_quit()
 {
@@ -64,28 +49,31 @@ bool caffeine_application_init(char *app_name)
 
     caff_input_init();
 
-    if (cff_platform_init(app_name))
+    if (!cff_platform_init(app_name))
     {
-        cff_platform_set_quit_clkb(_caffeine_on_quit);
+        caff_log(LOG_LEVEL_ERROR, "Failed to initialize platform\n");
 
-        caffeine_event_register_listener(EVENT_KEY_DOWN, _key_press);
-        caffeine_event_register_listener(EVENT_KEY_UP, _key_release);
-        caffeine_event_register_listener(EVENT_MOUSE_MOVE, _mouse_move);
+        caffeine_application_shutdown();
 
-        caff_log(LOG_LEVEL_TRACE, "Application initalized\n");
-        return true;
+        return false;
     }
 
-    caff_log(LOG_LEVEL_ERROR, "Failed to initialize platform\n");
+    cff_platform_set_quit_clkb(_caffeine_on_quit);
 
-    caffeine_application_shutdown();
+    if (!caff_ecs_init())
+    {
+        return false;
+    }
 
-    return false;
+    caff_log(LOG_LEVEL_TRACE, "Application initalized\n");
+    return true;
 }
 
 bool caffeine_application_run()
 {
     caff_log(LOG_LEVEL_TRACE, "Application running\n");
+
+    ecs_setup_test();
 
     while (_application.is_running)
     {
@@ -110,6 +98,7 @@ void caffeine_application_shutdown()
 
     cff_platform_shutdown();
 
+    caff_ecs_end();
     caff_input_end();
     caffeine_event_shutdown();
     caff_log_end();

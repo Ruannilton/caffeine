@@ -4,6 +4,7 @@
 #ifdef CFF_DEBUG
 #include <stdio.h>
 static uint64_t _mem_allocked;
+static uint64_t _count = 0;
 
 typedef struct
 {
@@ -34,12 +35,13 @@ void *cff_mem_alloc(uint64_t size)
   uintptr_t ptr = (uintptr_t)cff_malloc(sizeof(mem_header) + size);
   if (ptr != 0)
   {
+    _count++;
     mem_header *header = (mem_header *)ptr;
     header->size = size;
     _mem_allocked += size;
 
-    char msg[64];
-    sprintf(msg, "Allocated: %llu\n", _mem_allocked);
+    char msg[128];
+    sprintf(msg, "%llu - [%p] Allocated: %llu | Total: %llu\n", _count, (void *)ptr, size, _mem_allocked);
     cff_print_console(LOG_LEVEL_INFO, msg);
 
     ptr += sizeof(mem_header);
@@ -80,6 +82,11 @@ void cff_mem_release(void *ptr)
   {
     mem_header *header = (mem_header *)((uintptr_t)ptr - sizeof(mem_header));
     _mem_allocked -= header->size;
+
+    char msg[64];
+    sprintf(msg, "[%p] Freeded: %u | Tota: %llu\n", (void *)header, header->size, _mem_allocked);
+    cff_print_console(LOG_LEVEL_INFO, msg);
+
     cff_free(header);
   }
 #else
