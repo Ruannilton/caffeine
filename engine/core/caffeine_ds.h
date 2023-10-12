@@ -48,8 +48,58 @@
         __m_ptr_3->count++;                                     \
     } while (0)
 
+#define cff_arr_add_at(ARR_PTR, VALUE, INDEX)                   \
+    do                                                          \
+    {                                                           \
+        __typeof__(ARR_PTR) __m_ptr_3 = (ARR_PTR);              \
+        __typeof__(VALUE) __m_value = (VALUE);                  \
+        if (__m_ptr_3->count == __m_ptr_3->capacity)            \
+        {                                                       \
+            cff_arr_resize(__m_ptr_3, __m_ptr_3->capacity * 2); \
+        }                                                       \
+        __m_ptr_3->buffer[(uint32_t)(INDEX)] = __m_value;       \
+        __m_ptr_3->count++;                                     \
+    } while (0)
+
+#define cff_arr_ordered_add(ARR_PTR, VALUE)                                                        \
+    do                                                                                             \
+    {                                                                                              \
+        __typeof__(ARR_PTR) __m_ptr_3 = (ARR_PTR);                                                 \
+        __typeof__(VALUE) __m_value = (VALUE);                                                     \
+        if (__m_ptr_3->count == __m_ptr_3->capacity)                                               \
+        {                                                                                          \
+            cff_arr_resize(__m_ptr_3, __m_ptr_3->capacity * 2);                                    \
+        }                                                                                          \
+        uint32_t __m_i;                                                                            \
+        for (__m_i = 0; __m_i < __m_ptr_3->count && __m_ptr_3->buffer[__m_i] < __m_value; __m_i++) \
+            ;                                                                                      \
+        if (__m_i < __m_ptr_3->count)                                                              \
+        {                                                                                          \
+            for (uint32_t __m_j = __m_ptr_3->count; __m_j > __m_i; __m_j--)                        \
+            {                                                                                      \
+                __m_ptr_3->buffer[__m_j] = __m_ptr_3->buffer[__m_j - 1];                           \
+            }                                                                                      \
+        }                                                                                          \
+        __m_ptr_3->buffer[__m_i] = __m_value;                                                      \
+        __m_ptr_3->count++;                                                                        \
+    } while (0)
+
+#define cff_arr_add_i(ARR_PTR, VALUE, OUT_INDEX)                \
+    do                                                          \
+    {                                                           \
+        __typeof__(ARR_PTR) __m_ptr_3 = (ARR_PTR);              \
+        __typeof__(VALUE) __m_value = (VALUE);                  \
+        if (__m_ptr_3->count == __m_ptr_3->capacity)            \
+        {                                                       \
+            cff_arr_resize(__m_ptr_3, __m_ptr_3->capacity * 2); \
+        }                                                       \
+        OUT_INDEX = __m_ptr_3->count;                           \
+        __m_ptr_3->buffer[__m_ptr_3->count] = __m_value;        \
+        __m_ptr_3->count++;                                     \
+    } while (0)
+
 #define cff_arr_set(ARR_PTR, VALUE, INDEX) (ARR_PTR)->buffer[(uint32_t)(INDEX)] = (VALUE)
 
-#define cff_arr_release(ARR_PTR) cff_release((ARR_PTR)->buffer);
+#define cff_arr_release(ARR_PTR) cff_release((ARR_PTR)->buffer)
 
-#define cff_arr_get(ARR_PTR, INDEX) (ARR_PTR)->buffer[(uint32_t)(INDEX)];
+#define cff_arr_get(ARR_PTR, INDEX) (ARR_PTR)->buffer[(uint32_t)(INDEX)]
