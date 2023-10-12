@@ -31,7 +31,8 @@
 			"caffeine_ecs.h": "c",
 			"component_list.h": "c",
 			"archetype.h": "c",
-			"archetype_storage.h": "c"
+			"archetype_storage.h": "c",
+			"caffeine_2_ecs.h": "c"
 		}
 	}
 }

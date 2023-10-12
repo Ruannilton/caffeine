@@ -1,19 +1,8 @@
-#pragma once
+#include "caffeine_2_ecs.h"
 
-#include "../caffeine_ds.h"
-
-#include <stdint.h>
-
-#define INVALID_ID 0
 #define COMPONENT_TABLE_DEFAULT_SIZE 8
 #define ARCH_HASH_TABLE_DEFAULT_SIZE 256
 #define STORAGE_TABLE_DEFAULT_CAPACITY 4
-
-typedef uint32_t component_id;
-typedef uint32_t archtype_id;
-typedef uint32_t entity_id;
-
-cff_arr_dcltype(archetype, component_id);
 
 typedef struct
 {
@@ -62,6 +51,12 @@ typedef struct
     uint32_t row;
 } entity_record;
 
+typedef struct
+{
+    uint32_t row;
+    entity_storage *storage;
+} entity_ref;
+
 cff_arr_dcltype(component_table, component_metadata);
 cff_arr_dcltype(archetype_table, archetype_metadata);
 cff_arr_dcltype(storage_table, entity_storage);
@@ -76,9 +71,14 @@ static uint32_t arch_hash_colision = 0;
 static entity_table entities;
 
 static uint32_t hash_archetype(uint32_t len, component_id components[len], uint32_t seed);
-bool archetype_compare(uint32_t a_count, uint32_t b_count, component_id a[a_count], component_id b[b_count]);
+static inline entity_ref ecs_get_entity(entity_id id);
+static inline void *ecs_get_storage_component(entity_storage *storage, uint32_t row, component_id component);
+static void entity_storage_release(entity_storage *storage);
+static void entity_storage_init(entity_storage *storage, archtype_id arch_id, archetype arch);
+static int entity_storage_allocate(entity_storage *storage, entity_id id);
+static bool archetype_compare(uint32_t a_count, uint32_t b_count, component_id a[a_count], component_id b[b_count]);
 
-void ecs_init()
+bool ecs_init()
 {
     cff_arr_init(&components, COMPONENT_TABLE_DEFAULT_SIZE);
     cff_arr_init(&archetypes, ARCH_HASH_TABLE_DEFAULT_SIZE);
@@ -91,7 +91,6 @@ void ecs_init()
     cff_arr_add(&components, dummy_component);
 
     // dummy archetype
-    archetype dummy_archetype = {0};
     archetype_metadata dummy_archetype_meta = {0};
     cff_arr_add(&archetypes, dummy_archetype_meta);
 
@@ -100,9 +99,11 @@ void ecs_init()
 
     // zero hash_map
     cff_mem_zero(&arch_hash, sizeof(kv_components_id), sizeof(kv_components_id) * ARCH_HASH_TABLE_DEFAULT_SIZE);
+
+    return true;
 }
 
-void ecs_end()
+bool ecs_end()
 {
     cff_arr_release(&components);
 
@@ -123,6 +124,8 @@ void ecs_end()
     cff_arr_release(&storages);
 
     cff_arr_release(&entities);
+
+    return true;
 }
 
 component_id ecs_register_component(const char *name, uint32_t size)
@@ -184,6 +187,26 @@ archtype_id ecs_register_archetype(archetype arch)
     return arch_id;
 }
 
+archtype_id ecs_archetype_get(uint32_t len, component_id components[len])
+{
+    uint32_t colision = 0;
+    uint32_t hash = hash_archetype(len, components, colision) % arch_hash.capacity;
+
+    while (arch_hash.buffer[hash].id != INVALID_ID)
+    {
+        if (archetype_compare(arch_hash.buffer[hash].component_count, len, arch_hash.buffer[hash].comp_ids, components))
+            return arch_hash.buffer[hash].id;
+
+        colision++;
+
+        if (colision > arch_hash_colision)
+            return INVALID_ID;
+        hash = hash_archetype(len, components, colision) % arch_hash.capacity;
+    }
+
+    return INVALID_ID;
+}
+
 entity_id ecs_create_entity(archtype_id archetype)
 {
     entity_id id = (entity_id)entities.count;
@@ -194,6 +217,13 @@ entity_id ecs_create_entity(archtype_id archetype)
     cff_arr_add_at(&entities, record, id);
 
     return id;
+}
+
+void *ecs_get_entity_component(entity_id e_id, component_id c_id)
+{
+    entity_ref entity = ecs_get_entity(e_id);
+    void *component_ref = ecs_get_storage_component(entity.storage, entity.row, c_id);
+    return component_ref;
 }
 
 void ecs_destroy_entity(entity_id id)
@@ -230,27 +260,20 @@ void ecs_destroy_entity(entity_id id)
     last_entity_data->row = entity_index_row;
 }
 
-archtype_id ecs_archetype_get(uint32_t len, component_id components[len])
-{
-    uint32_t colision = 0;
-    uint32_t hash = hash_archetype(len, components, colision) % arch_hash.capacity;
-
-    while (arch_hash.buffer[hash].id != INVALID_ID)
-    {
-        if (archetype_compare(arch_hash.buffer[hash].comp_ids, components, arch_hash.buffer[hash].component_count, len))
-            return arch_hash.buffer[hash].id;
-
-        colision++;
-
-        if (colision > arch_hash_colision)
-            return INVALID_ID;
-        hash = hash_archetype(len, components, colision) % arch_hash.capacity;
-    }
-}
-
 //-------------------
 
-uint32_t hash_archetype(uint32_t len, component_id components[len], uint32_t seed)
+static inline entity_ref ecs_get_entity(entity_id id)
+{
+    entity_record *entity_data = &(cff_arr_get(&entities, id));
+    archtype_id arch_id = entity_data->arch_id;
+    entity_storage *entity_storage = &(cff_arr_get(&storages, arch_id));
+
+    uint32_t entity_index_row = entity_data->row;
+
+    return (entity_ref){.row = entity_index_row, .storage = entity_storage};
+}
+
+static uint32_t hash_archetype(uint32_t len, component_id components[len], uint32_t seed)
 {
     uint32_t hash_value = seed;
 
@@ -264,7 +287,7 @@ uint32_t hash_archetype(uint32_t len, component_id components[len], uint32_t see
     return hash_value;
 }
 
-bool archetype_compare(uint32_t a_count, uint32_t b_count, component_id a[a_count], component_id b[b_count])
+static bool archetype_compare(uint32_t a_count, uint32_t b_count, component_id a[a_count], component_id b[b_count])
 {
     if (a_count != b_count)
         return false;
@@ -276,7 +299,7 @@ bool archetype_compare(uint32_t a_count, uint32_t b_count, component_id a[a_coun
     return true;
 }
 
-void entity_storage_init(entity_storage *storage, archtype_id arch_id, archetype arch)
+static void entity_storage_init(entity_storage *storage, archtype_id arch_id, archetype arch)
 {
     uint32_t component_count = arch.count;
     storage->entity_size = 0;
@@ -306,7 +329,7 @@ void entity_storage_init(entity_storage *storage, archtype_id arch_id, archetype
     }
 }
 
-void entity_storage_release(entity_storage *storage)
+static void entity_storage_release(entity_storage *storage)
 {
     for (size_t i = 0; i < storage->component_count; i++)
     {
@@ -317,7 +340,7 @@ void entity_storage_release(entity_storage *storage)
     cff_mem_release(storage->component_datas);
 }
 
-int entity_storage_allocate(entity_storage *storage, entity_id id)
+static int entity_storage_allocate(entity_storage *storage, entity_id id)
 {
     if (storage->count == storage->capacity)
     {
@@ -340,4 +363,21 @@ int entity_storage_allocate(entity_storage *storage, entity_id id)
     storage->count++;
 
     return index;
+}
+
+static inline void *ecs_get_storage_component(entity_storage *storage, uint32_t row, component_id component)
+{
+    for (size_t i = 0; i < storage->component_count; i++)
+    {
+        if (storage->comp_ids[i] != component)
+            continue;
+
+        uint32_t component_size = storage->comp_sizes[i];
+
+        void *entity_component = (void *)((uintptr_t)storage->component_datas[i] + (uintptr_t)((component_size)*row));
+
+        return entity_component;
+    }
+
+    return NULL;
 }
