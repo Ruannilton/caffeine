@@ -98,7 +98,10 @@ bool ecs_init()
     cff_arr_add(&entities, (entity_record){0});
 
     // zero hash_map
-    cff_mem_zero(&arch_hash, sizeof(kv_components_id), sizeof(kv_components_id) * ARCH_HASH_TABLE_DEFAULT_SIZE);
+    for (size_t i = 0; i < arch_hash.capacity; i++)
+    {
+        arch_hash.buffer[i] = (kv_components_id){0};
+    }
 
     return true;
 }
@@ -161,16 +164,12 @@ archtype_id ecs_register_archetype(archetype arch)
 
     archtype_id arch_id = archetypes.count;
 
-    uint32_t inserted_at = 0;
-    cff_arr_add_i(&storages, (entity_storage){0}, inserted_at);
-    debug_assert(inserted_at == (uint32_t)arch_id);
-    entity_storage *storage = &(cff_arr_get(&storages, inserted_at));
+    cff_arr_add_at(&storages, (entity_storage){0}, arch_id);
+    entity_storage *storage = &(cff_arr_get(&storages, arch_id));
     entity_storage_init(storage, arch_id, arch);
 
-    inserted_at = 0;
     archetype_metadata metadata = {.id = arch_id, .arch = arch, .storage = storage};
-    cff_arr_add_i(&archetypes, metadata, inserted_at);
-    debug_assert(inserted_at == (uint32_t)metadata.id);
+    cff_arr_add_at(&archetypes, metadata, metadata.id);
 
     kv_components_id *hash_insert = &(cff_arr_get(&arch_hash, hash));
     hash_insert->id = arch_id;
