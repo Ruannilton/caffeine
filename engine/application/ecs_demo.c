@@ -1,4 +1,4 @@
-#include "../core/ecs/caffeine_2_ecs.h"
+#include "../core/ecs/caffeine_ecs.h"
 #include "../core/caffeine_logging.h"
 #include <inttypes.h>
 

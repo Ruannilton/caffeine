@@ -32,7 +32,10 @@
 			"component_list.h": "c",
 			"archetype.h": "c",
 			"archetype_storage.h": "c",
-			"caffeine_2_ecs.h": "c"
+			"caffeine_2_ecs.h": "c",
+			"caffeine_vector.h": "c",
+			"caffeine_ds.h": "c",
+			"stdlib.h": "c"
 		}
 	}
 }

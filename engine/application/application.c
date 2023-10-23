@@ -7,7 +7,7 @@
 #include "../core/caffeine_memory.h"
 #include "../core/caffeine_events.h"
 #include "../core/caffeine_input.h"
-#include "../core/ecs/caffeine_2_ecs.h"
+#include "../core/ecs/caffeine_ecs.h"
 
 typedef struct
 {

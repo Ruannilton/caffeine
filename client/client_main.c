@@ -2,7 +2,6 @@
 
 int main()
 {
-
   bool app_started = caffeine_application_init("Caffeine");
 
   if (!app_started)

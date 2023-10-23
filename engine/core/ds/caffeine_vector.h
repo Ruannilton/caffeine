@@ -1,8 +1,11 @@
 #pragma once
+
 #include <stdint.h>
-#include "caffeine_memory.h"
+#include "../caffeine_memory.h"
 
 #define cff_release(A) cff_mem_release((void *)A)
+
+#define alloc_gen_array(PTR, CAPACITY) PTR = cff_new_arr(__typeof__(PTR[0]), CAPACITY)
 
 #define cff_arr_dcltype(NAME, TYPE) \
     typedef struct                  \
@@ -12,14 +15,14 @@
         uint32_t capacity;          \
     } NAME
 
-#define cff_arr_init(ARR_PTR, CAPACITY)                                       \
-    do                                                                        \
-    {                                                                         \
-        __typeof__(ARR_PTR) __m_ptr_1 = (ARR_PTR);                            \
-        uint32_t c = (uint32_t)(CAPACITY);                                    \
-        __m_ptr_1->count = 0;                                                 \
-        __m_ptr_1->capacity = c;                                              \
-        __m_ptr_1->buffer = cff_new_arr(__typeof__(__m_ptr_1->buffer[0]), c); \
+#define cff_arr_init(ARR_PTR, CAPACITY)            \
+    do                                             \
+    {                                              \
+        __typeof__(ARR_PTR) __m_ptr_1 = (ARR_PTR); \
+        uint32_t c = (uint32_t)(CAPACITY);         \
+        __m_ptr_1->count = 0;                      \
+        __m_ptr_1->capacity = c;                   \
+        alloc_gen_array(__m_ptr_1->buffer, c);     \
     } while (0)
 
 #define cff_arr_resize(ARR_PTR, CAPACITY)                                                      \
@@ -103,3 +106,67 @@
 #define cff_arr_release(ARR_PTR) cff_release((ARR_PTR)->buffer)
 
 #define cff_arr_get(ARR_PTR, INDEX) (ARR_PTR)->buffer[(uint32_t)(INDEX)]
+
+#define cff_arr_impl(ARRAY_NAME, TYPE)                                        \
+    void ARRAY_NAME##_init(ARRAY_NAME *arr, uint32_t capacity)                \
+    {                                                                         \
+        arr->count = 0;                                                       \
+        arr->capacity = capacity;                                             \
+        alloc_gen_array(arr->buffer, capacity);                               \
+    }                                                                         \
+                                                                              \
+    void ARRAY_NAME##_resize(ARRAY_NAME *arr, uint32_t capacity)              \
+    {                                                                         \
+        TYPE *tmp_buffer = cff_resize_arr(arr->buffer, capacity);             \
+        if (tmp_buffer != NULL)                                               \
+        {                                                                     \
+            arr->buffer = tmp_buffer;                                         \
+            arr->capacity = capacity;                                         \
+        }                                                                     \
+    }                                                                         \
+                                                                              \
+    void ARRAY_NAME##_add(ARRAY_NAME *arr, TYPE value)                        \
+    {                                                                         \
+        if (arr->count == arr->capacity)                                      \
+        {                                                                     \
+            ARRAY_NAME##_resize(arr, arr->capacity * 2);                      \
+        }                                                                     \
+        arr->buffer[arr->count] = value;                                      \
+        arr->count++;                                                         \
+    }                                                                         \
+                                                                              \
+    void ARRAY_NAME##_add_at(ARRAY_NAME *arr, TYPE value, uint32_t index)     \
+    {                                                                         \
+        if (arr->count == arr->capacity)                                      \
+        {                                                                     \
+            ARRAY_NAME##_resize(arr, arr->capacity * 2);                      \
+        }                                                                     \
+        arr->buffer[index] = value;                                           \
+        arr->count++;                                                         \
+    }                                                                         \
+                                                                              \
+    void ARRAY_NAME##_add_i(ARRAY_NAME *arr, TYPE value, uint32_t *out_index) \
+    {                                                                         \
+        if (arr->count == arr->capacity)                                      \
+        {                                                                     \
+            ARRAY_NAME##_resize(arr, arr->capacity * 2);                      \
+        }                                                                     \
+        *out_index = arr->count;                                              \
+        arr->buffer[arr->count] = value;                                      \
+        arr->count++;                                                         \
+    }                                                                         \
+                                                                              \
+    void ARRAY_NAME##_set(ARRAY_NAME *arr, TYPE value, uint32_t index)        \
+    {                                                                         \
+        arr->buffer[index] = value;                                           \
+    }                                                                         \
+                                                                              \
+    void ARRAY_NAME##_release(ARRAY_NAME *arr)                                \
+    {                                                                         \
+        cff_release(arr->buffer);                                             \
+    }                                                                         \
+                                                                              \
+    TYPE ARRAY_NAME##_get(const ARRAY_NAME *arr, uint32_t index)              \
+    {                                                                         \
+        return arr->buffer[index];                                            \
+    }
