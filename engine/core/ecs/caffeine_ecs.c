@@ -39,13 +39,6 @@ typedef struct
 
 typedef struct
 {
-    component_id *comp_ids;
-    uint32_t component_count;
-    archtype_id id;
-} kv_components_id;
-
-typedef struct
-{
     entity_id id;
     archtype_id arch_id;
     uint32_t row;
@@ -57,58 +50,76 @@ typedef struct
     entity_storage *storage;
 } entity_ref;
 
-cff_arr_dcltype(component_table, component_metadata);
-cff_arr_dcltype(archetype_table, archetype_metadata);
-cff_arr_dcltype(storage_table, entity_storage);
-cff_arr_dcltype(arch_to_id, kv_components_id);
-cff_arr_dcltype(entity_table, entity_record);
+cff_arr_dcltype(component_list, component_metadata);
+cff_arr_impl(component_list, component_metadata);
 
-cff_arr_impl(component_table, component_metadata);
-cff_arr_impl(archetype_table, archetype_metadata);
-cff_arr_impl(storage_table, entity_storage);
-cff_arr_impl(arch_to_id, kv_components_id);
-cff_arr_impl(entity_table, entity_record);
+// List<component_metadata>
+static component_list components;
 
-static component_table components;
-static archetype_table archetypes;
-static arch_to_id arch_hash;
-static storage_table storages;
-static uint32_t arch_hash_colision = 0;
-static entity_table entities;
+cff_arr_dcltype(archetype_list, archetype_metadata);
+cff_arr_impl(archetype_list, archetype_metadata);
 
-static uint32_t hash_archetype(uint32_t len, component_id components[len], uint32_t seed);
+// List<archetype_metadata>
+static archetype_list archetypes;
+
+cff_arr_dcltype(entity_list, entity_record);
+cff_arr_impl(entity_list, entity_record);
+
+// List<entity_record>
+static entity_list entities;
+
+cff_arr_dcltype(storage_list, entity_storage);
+cff_arr_impl(storage_list, entity_storage);
+
+// List<entity_storage>
+static storage_list storages;
+
+cff_arr_dcltype(arch_meta_list, archetype_metadata *);
+cff_arr_impl(arch_meta_list, archetype_metadata *);
+cff_arr_dcltype(component_usage_list, arch_meta_list);
+cff_arr_impl(component_usage_list, arch_meta_list);
+
+// List<List<archetype_metadata*>>
+static component_usage_list component_reference_count;
+
+cff_hash_dcltype(archetype_table, archetype, archtype_id);
+cff_hash_impl(archetype_table, archetype, archtype_id);
+
+// Dictionary<archetype,archtype_id>
+static archetype_table arch_table;
+
+static uint32_t hash_archetype(archetype *data, uint32_t seed);
+static bool compare_archetype(archetype *a, archetype *b);
+static bool compare_archetype_id(archtype_id *a, archtype_id *b);
+
 static inline entity_ref ecs_get_entity(entity_id id);
 static inline void *ecs_get_storage_component(entity_storage *storage, uint32_t row, component_id component);
 static void entity_storage_release(entity_storage *storage);
 static void entity_storage_init(entity_storage *storage, archtype_id arch_id, archetype arch);
 static int entity_storage_allocate(entity_storage *storage, entity_id id);
-static bool archetype_compare(uint32_t a_count, uint32_t b_count, component_id a[a_count], component_id b[b_count]);
 
 bool ecs_init()
 {
-    component_table_init(&components, COMPONENT_TABLE_DEFAULT_SIZE);
-    archetype_table_init(&archetypes, ARCH_HASH_TABLE_DEFAULT_SIZE);
-    arch_to_id_init(&arch_hash, ARCH_HASH_TABLE_DEFAULT_SIZE);
-    storage_table_init(&storages, ARCH_HASH_TABLE_DEFAULT_SIZE);
-    entity_table_init(&entities, STORAGE_TABLE_DEFAULT_CAPACITY);
+    component_list_init(&components, COMPONENT_TABLE_DEFAULT_SIZE);
+    component_usage_list_init(&component_reference_count, COMPONENT_TABLE_DEFAULT_SIZE);
+    archetype_list_init(&archetypes, ARCH_HASH_TABLE_DEFAULT_SIZE);
+    storage_list_init(&storages, ARCH_HASH_TABLE_DEFAULT_SIZE);
+    entity_list_init(&entities, STORAGE_TABLE_DEFAULT_CAPACITY);
+
+    archetype_table_init(&arch_table, ARCH_HASH_TABLE_DEFAULT_SIZE, hash_archetype, compare_archetype, compare_archetype_id);
 
     // dummy component
     component_metadata dummy_component = {.id = 0, .name = "__Invalid", .size = 0};
-    component_table_add(&components, dummy_component);
+    component_list_add(&components, dummy_component);
 
     // dummy archetype
     archetype_metadata dummy_archetype_meta = {0};
-    archetype_table_add(&archetypes, dummy_archetype_meta);
+    archetype_list_add(&archetypes, dummy_archetype_meta);
 
     // dummy entity
-    entity_table_add(&entities, (entity_record){0});
+    entity_list_add(&entities, (entity_record){0});
 
-    // zero hash_map
-    for (size_t i = 0; i < arch_hash.capacity; i++)
-    {
-        arch_hash.buffer[i] = (kv_components_id){0};
-    }
-
+    component_usage_list_zero(&component_reference_count);
     return true;
 }
 
@@ -122,8 +133,6 @@ bool ecs_end()
         cff_mem_release(archetypes.buffer[i].arch.buffer); // release archetypes buffers
     }
     cff_arr_release(&archetypes);
-
-    cff_arr_release(&arch_hash);
 
     // release storages
     for (size_t i = 0; i < storages.count; i++)
@@ -143,50 +152,44 @@ component_id ecs_register_component(const char *name, uint32_t size)
 
     component_metadata metadata = {.id = new_component, .name = name, .size = size};
 
-    uint32_t inserted_at;
-    cff_arr_add_i(&components, metadata, inserted_at);
+    component_list_add_at(&components, metadata, new_component);
 
-    debug_assert(inserted_at == (uint32_t)metadata.id);
+    arch_meta_list usage = {0};
+    arch_meta_list_init(&usage, 4);
+
+    component_usage_list_add_at(&component_reference_count, usage, new_component);
 
     return new_component;
 }
 
 archtype_id ecs_register_archetype(archetype arch)
 {
-    uint32_t colision = 0;
-    uint32_t hash = hash_archetype(arch.count, arch.buffer, colision) % arch_hash.capacity;
 
-    while (arch_hash.buffer[hash].id != INVALID_ID)
+    archtype_id new_id = INVALID_ID;
+    if (archetype_table_get(&arch_table, arch, &new_id))
     {
-        if (archetype_compare(arch_hash.buffer[hash].component_count, arch.count, arch_hash.buffer[hash].comp_ids, arch.buffer))
-            return arch_hash.buffer[hash].id;
-
-        colision++;
-        hash = hash_archetype(arch.count, arch.buffer, colision) % arch_hash.capacity;
+        return new_id;
     }
 
-    if (colision > arch_hash_colision)
-        arch_hash_colision = colision;
+    archtype_id arch_id = arch_table.count;
+    archetype_table_add(&arch_table, arch, new_id);
 
-    archtype_id arch_id = archetypes.count;
+    entity_storage storage = {0};
+    entity_storage_init(&storage, arch_id, arch);
+    storage_list_add_at(&storages, storage, arch_id);
 
-    cff_arr_add_at(&storages, (entity_storage){0}, arch_id);
-    entity_storage *storage = &(cff_arr_get(&storages, arch_id));
-    entity_storage_init(storage, arch_id, arch);
+    entity_storage *storage_ref = storage_list_get_ref(&storages, arch_id);
+    archetype_metadata metadata = {.id = arch_id, .arch = arch, .storage = storage_ref};
+    archetype_list_add_at(&archetypes, metadata, arch_id);
 
-    archetype_metadata metadata = {.id = arch_id, .arch = arch, .storage = storage};
-    cff_arr_add_at(&archetypes, metadata, metadata.id);
+    archetype_metadata *metadata_ref = archetype_list_get_ref(&archetypes, arch_id);
 
-    kv_components_id *hash_insert = &(cff_arr_get(&arch_hash, hash));
-    hash_insert->id = arch_id;
-    hash_insert->component_count = arch.count;
-    hash_insert->comp_ids = arch.buffer;
-    arch_hash.count++;
-
-    if (arch_hash.count > arch_hash.capacity * 0.7f)
+    for (int i = 0; i < arch.count; i++)
     {
-        cff_arr_resize(&arch_hash, arch_hash.capacity * 2);
-        // rehash
+        component_id c_id = arch.buffer[i];
+        arch_meta_list *c_usage = component_usage_list_get_ref(&component_reference_count, c_id);
+
+        arch_meta_list_add(c_usage, metadata_ref);
     }
 
     return arch_id;
@@ -194,22 +197,13 @@ archtype_id ecs_register_archetype(archetype arch)
 
 archtype_id ecs_archetype_get(uint32_t len, component_id components[len])
 {
-    uint32_t colision = 0;
-    uint32_t hash = hash_archetype(len, components, colision) % arch_hash.capacity;
+    archtype_id id = INVALID_ID;
+    archetype arch = (archetype){.buffer = components, .capacity = len, .count = len};
 
-    while (arch_hash.buffer[hash].id != INVALID_ID)
-    {
-        if (archetype_compare(arch_hash.buffer[hash].component_count, len, arch_hash.buffer[hash].comp_ids, components))
-            return arch_hash.buffer[hash].id;
+    int8_t res = archetype_table_get(&arch_table, arch, &id);
+    (void)res;
 
-        colision++;
-
-        if (colision > arch_hash_colision)
-            return INVALID_ID;
-        hash = hash_archetype(len, components, colision) % arch_hash.capacity;
-    }
-
-    return INVALID_ID;
+    return id;
 }
 
 entity_id ecs_create_entity(archtype_id archetype)
@@ -278,30 +272,35 @@ static inline entity_ref ecs_get_entity(entity_id id)
     return (entity_ref){.row = entity_index_row, .storage = entity_storage};
 }
 
-static uint32_t hash_archetype(uint32_t len, component_id components[len], uint32_t seed)
+static uint32_t hash_archetype(archetype *data, uint32_t seed)
 {
     uint32_t hash_value = seed;
 
-    for (size_t i = 0; i < len; i++)
+    for (size_t i = 0; i < data->count; i++)
     {
         // Mix the bits of the current integer into the hash value
-        hash_value ^= components[i];
+        hash_value ^= data->buffer[i];
         hash_value *= 0x9e3779b1; // A prime number for mixing
     }
 
     return hash_value;
 }
 
-static bool archetype_compare(uint32_t a_count, uint32_t b_count, component_id a[a_count], component_id b[b_count])
+static bool compare_archetype(archetype *a, archetype *b)
 {
-    if (a_count != b_count)
+    if (a->count != b->count)
         return false;
-    for (size_t i = 0; i < a_count; i++)
+    for (size_t i = 0; i < a->count; i++)
     {
-        if (a[i] != b[i])
+        if (a->buffer[i] != b->buffer[i])
             return false;
     }
     return true;
+}
+
+static bool compare_archetype_id(archtype_id *a, archtype_id *b)
+{
+    return *a == *b;
 }
 
 static void entity_storage_init(entity_storage *storage, archtype_id arch_id, archetype arch)

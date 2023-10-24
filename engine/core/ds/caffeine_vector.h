@@ -107,6 +107,8 @@
 
 #define cff_arr_get(ARR_PTR, INDEX) (ARR_PTR)->buffer[(uint32_t)(INDEX)]
 
+#define cff_arr_get_ref(ARR_PTR, INDEX) (ARR_PTR)->buffer + ((uint32_t)(INDEX))
+
 #define cff_arr_impl(ARRAY_NAME, TYPE)                                        \
     void ARRAY_NAME##_init(ARRAY_NAME *arr, uint32_t capacity)                \
     {                                                                         \
@@ -169,4 +171,16 @@
     TYPE ARRAY_NAME##_get(const ARRAY_NAME *arr, uint32_t index)              \
     {                                                                         \
         return arr->buffer[index];                                            \
-    }
+    }                                                                         \
+    TYPE *ARRAY_NAME##_get_ref(const ARRAY_NAME *arr, uint32_t index)         \
+    {                                                                         \
+        return arr->buffer + index;                                           \
+    }                                                                         \
+    int8_t ARRAY_NAME##_contains(const ARRAY_NAME *arr, TYPE value)           \
+    {                                                                         \
+        for (uint32_t i = 0; i < arr->count; i++)                             \
+            if (cff_mem_cmp(arr->buffer + i, &value, sizeof(TYPE)))           \
+                return 1;                                                     \
+        return 0;                                                             \
+    }                                                                         \
+    void ARRAY_NAME##_zero(const ARRAY_NAME *arr) { cff_mem_zero(arr->buffer, sizeof(TYPE), sizeof(TYPE) * arr->capacity); }
