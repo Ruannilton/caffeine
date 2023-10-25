@@ -15,14 +15,14 @@
         uint32_t capacity;          \
     } NAME
 
-#define cff_arr_init(ARR_PTR, CAPACITY)            \
-    do                                             \
-    {                                              \
-        __typeof__(ARR_PTR) __m_ptr_1 = (ARR_PTR); \
-        uint32_t c = (uint32_t)(CAPACITY);         \
-        __m_ptr_1->count = 0;                      \
-        __m_ptr_1->capacity = c;                   \
-        alloc_gen_array(__m_ptr_1->buffer, c);     \
+#define cff_arr_init(ARR_PTR, CAPACITY)                   \
+    do                                                    \
+    {                                                     \
+        __typeof__(ARR_PTR) __m_ptr_1 = (ARR_PTR);        \
+        uint32_t c = (uint32_t)(CAPACITY ? CAPACITY : 4); \
+        __m_ptr_1->count = 0;                             \
+        __m_ptr_1->capacity = c;                          \
+        alloc_gen_array(__m_ptr_1->buffer, c);            \
     } while (0)
 
 #define cff_arr_resize(ARR_PTR, CAPACITY)                                                      \
@@ -113,7 +113,7 @@
     void ARRAY_NAME##_init(ARRAY_NAME *arr, uint32_t capacity)                \
     {                                                                         \
         arr->count = 0;                                                       \
-        arr->capacity = capacity;                                             \
+        arr->capacity = capacity ? capacity : 4;                              \
         alloc_gen_array(arr->buffer, capacity);                               \
     }                                                                         \
                                                                               \

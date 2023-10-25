@@ -50,6 +50,11 @@ typedef struct
     entity_storage *storage;
 } entity_ref;
 
+struct query_it
+{
+    entity_storage *storage;
+};
+
 cff_arr_dcltype(component_list, component_metadata);
 cff_arr_impl(component_list, component_metadata);
 
@@ -74,6 +79,11 @@ cff_arr_impl(storage_list, entity_storage);
 // List<entity_storage>
 static storage_list storages;
 
+cff_arr_dcltype(storage_ref_list, entity_storage *);
+cff_arr_impl(storage_ref_list, entity_storage *);
+
+cff_arr_impl(archetype, component_id);
+
 cff_arr_dcltype(arch_meta_list, archetype_metadata *);
 cff_arr_impl(arch_meta_list, archetype_metadata *);
 cff_arr_dcltype(component_usage_list, arch_meta_list);
@@ -85,6 +95,26 @@ static component_usage_list component_reference_count;
 cff_hash_dcltype(archetype_table, archetype, archtype_id);
 cff_hash_impl(archetype_table, archetype, archtype_id);
 
+cff_arr_dcltype(query_cache, storage_ref_list);
+cff_arr_impl(query_cache, storage_ref_list);
+static query_cache query_caches;
+
+cff_arr_dcltype(query_list, ecs_query);
+cff_arr_impl(query_list, ecs_query);
+static query_list queries;
+
+cff_hash_dcltype(query_table, ecs_query, query_id);
+cff_hash_impl(query_table, ecs_query, query_id);
+static query_table map_query_to_id;
+
+cff_hash_dcltype(system_table, ecs_system, query_id);
+cff_hash_impl(system_table, ecs_system, query_id);
+static system_table systems;
+
+cff_arr_dcltype(system_list, ecs_system);
+cff_arr_impl(system_list, ecs_system);
+static system_list sys_list;
+
 // Dictionary<archetype,archtype_id>
 static archetype_table arch_table;
 
@@ -92,11 +122,16 @@ static uint32_t hash_archetype(archetype *data, uint32_t seed);
 static bool compare_archetype(archetype *a, archetype *b);
 static bool compare_archetype_id(archtype_id *a, archtype_id *b);
 
+static uint32_t hash_query(ecs_query *query, uint32_t seed);
+static bool compare_query(ecs_query *a, ecs_query *b);
+static bool compare_query_id(query_id *a, query_id *b);
+
 static inline entity_ref ecs_get_entity(entity_id id);
 static inline void *ecs_get_storage_component(entity_storage *storage, uint32_t row, component_id component);
 static void entity_storage_release(entity_storage *storage);
 static void entity_storage_init(entity_storage *storage, archtype_id arch_id, archetype arch);
 static int entity_storage_allocate(entity_storage *storage, entity_id id);
+static bool ecs_evaluate_query(ecs_query *query, archetype *arch);
 
 bool ecs_init()
 {
@@ -105,21 +140,22 @@ bool ecs_init()
     archetype_list_init(&archetypes, ARCH_HASH_TABLE_DEFAULT_SIZE);
     storage_list_init(&storages, ARCH_HASH_TABLE_DEFAULT_SIZE);
     entity_list_init(&entities, STORAGE_TABLE_DEFAULT_CAPACITY);
-
+    query_cache_init(&query_caches, COMPONENT_TABLE_DEFAULT_SIZE);
+    query_list_init(&queries, COMPONENT_TABLE_DEFAULT_SIZE);
     archetype_table_init(&arch_table, ARCH_HASH_TABLE_DEFAULT_SIZE, hash_archetype, compare_archetype, compare_archetype_id);
+    query_table_init(&map_query_to_id, ARCH_HASH_TABLE_DEFAULT_SIZE, hash_query, compare_query, compare_query_id);
+    system_table_init(&systems, ARCH_HASH_TABLE_DEFAULT_SIZE, _generated_system_table_hash_fn, _generated_system_table_cmp_key_fn, _generated_system_table_cmp_data_fn);
+    system_list_init(&sys_list, COMPONENT_TABLE_DEFAULT_SIZE);
 
-    // dummy component
-    component_metadata dummy_component = {.id = 0, .name = "__Invalid", .size = 0};
-    component_list_add(&components, dummy_component);
-
-    // dummy archetype
-    archetype_metadata dummy_archetype_meta = {0};
-    archetype_list_add(&archetypes, dummy_archetype_meta);
-
-    // dummy entity
-    entity_list_add(&entities, (entity_record){0});
-
+    component_list_zero(&components);
     component_usage_list_zero(&component_reference_count);
+    archetype_list_zero(&archetypes);
+    storage_list_zero(&storages);
+    entity_list_zero(&entities);
+    query_cache_zero(&query_caches);
+    query_list_zero(&queries);
+    system_list_zero(&sys_list);
+
     return true;
 }
 
@@ -192,6 +228,17 @@ archtype_id ecs_register_archetype(archetype arch)
         arch_meta_list_add(c_usage, metadata_ref);
     }
 
+    for (size_t i = 0; i < queries.count; i++)
+    {
+        ecs_query *q = query_list_get_ref(&queries, i);
+        bool eval = ecs_evaluate_query(q, &arch);
+        if (eval)
+        {
+            storage_ref_list *srl = query_cache_get_ref(&query_caches, i);
+            storage_ref_list_add(srl, storage_ref);
+        }
+    }
+
     return arch_id;
 }
 
@@ -259,6 +306,105 @@ void ecs_destroy_entity(entity_id id)
     last_entity_data->row = entity_index_row;
 }
 
+query_id ecs_register_query(ecs_query query)
+{
+    query_id q_id = INVALID_ID;
+
+    if (query_table_get(&map_query_to_id, query, &q_id))
+    {
+        return q_id;
+    }
+
+    q_id = queries.count;
+
+    uint32_t min_usage = (uint32_t)(0xffffffff);
+    arch_meta_list *archs = NULL;
+
+    for (uint32_t min_id = 0; min_id < query.with_components.count; min_id++)
+    {
+        component_id cp_id = query.with_components.buffer[min_id];
+        arch_meta_list *meta = component_usage_list_get_ref(&component_reference_count, cp_id);
+        if (meta->count < min_usage)
+        {
+            min_usage = meta->count;
+            archs = meta;
+        }
+    }
+
+    storage_ref_list storage_refs = {0};
+    if (archs != NULL)
+    {
+        storage_ref_list_init(&storage_refs, archs->count);
+
+        for (size_t i = 0; i < archs->count; i++)
+        {
+            archetype_metadata *data = arch_meta_list_get(archs, i);
+
+            if (ecs_evaluate_query(&query, &(data->arch)))
+            {
+                storage_ref_list_add(&storage_refs, data->storage);
+            }
+        }
+    }
+    else
+    {
+        storage_ref_list_init(&storage_refs, 4);
+    }
+
+    query_list_add_at(&queries, query, q_id);
+    query_cache_add_at(&query_caches, storage_refs, q_id);
+    query_table_add(&map_query_to_id, query, q_id);
+    return q_id;
+}
+
+uint32_t ecs_query_it_count(query_it *it)
+{
+    return it->storage->count;
+}
+
+void *ecs_query_it_get_components(query_it *it, component_id id)
+{
+    for (size_t i = 0; i < it->storage->component_count; i++)
+    {
+        if (it->storage->comp_ids[i] != id)
+            continue;
+
+        return (void *)((uintptr_t)it->storage->component_datas[i]);
+    }
+
+    return NULL;
+}
+
+void ecs_register_system(query_id query, ecs_system ecs_system)
+{
+    if (system_table_exist(&systems, ecs_system))
+    {
+        return;
+    }
+
+    system_table_add(&systems, ecs_system, query);
+    system_list_add(&sys_list, ecs_system);
+}
+
+void ecs_update()
+{
+    for (size_t i = 0; i < sys_list.count; i++)
+    {
+        ecs_system sys = system_list_get(&sys_list, i);
+        query_id q_id;
+        if (system_table_get(&systems, sys, &q_id))
+        {
+            storage_ref_list *cache = query_cache_get_ref(&query_caches, q_id);
+            for (size_t j = 0; j < cache->count; j++)
+            {
+                entity_storage *strg = storage_ref_list_get(cache, j);
+                query_it it = {.storage = strg};
+                sys(&it);
+            }
+        }
+    }
+}
+
 //-------------------
 
 static inline entity_ref ecs_get_entity(entity_id id)
@@ -299,6 +445,25 @@ static bool compare_archetype(archetype *a, archetype *b)
 }
 
 static bool compare_archetype_id(archtype_id *a, archtype_id *b)
+{
+    return *a == *b;
+}
+
+static uint32_t hash_query(ecs_query *query, uint32_t seed)
+{
+    uint32_t hash = hash_archetype(&(query->with_components), seed);
+    hash *= 1 + (query->exact * (0x9e3779b1 - 1));
+    return hash;
+}
+
+static bool compare_query(ecs_query *a, ecs_query *b)
+{
+    if (a->exact != b->exact)
+        return false;
+    return compare_archetype(&(a->with_components), &(b->with_components));
+}
+
+static bool compare_query_id(query_id *a, query_id *b)
 {
     return *a == *b;
 }
@@ -384,4 +549,23 @@ static inline void *ecs_get_storage_component(entity_storage *storage, uint32_t 
     }
 
     return NULL;
+}
+
+static bool ecs_evaluate_query(ecs_query *query, archetype *arch)
+{
+    if (query->exact)
+    {
+        return compare_archetype(&(query->with_components), arch);
+    }
+
+    bool add = true;
+    for (size_t j = 0; j < query->with_components.count; j++)
+    {
+        if (!archetype_contains(arch, query->with_components.buffer[j]))
+        {
+            add = false;
+            break;
+        }
+    }
+    return add;
 }
