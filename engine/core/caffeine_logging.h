@@ -22,4 +22,8 @@ void caff_log_end();
 #define caff_log_trace(message, ...) \
   caff_log(LOG_LEVEL_TRACE, message, __VA_ARGS__)
 
+#define caff_raw_log(message, ...) \
+  caff_raw_log(message, __VA_ARGS__)
+
 CAFF_API void caff_log(log_level level, const char *message, ...);
+CAFF_API void caff_raw_log(const char *message, ...);

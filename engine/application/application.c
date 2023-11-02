@@ -7,7 +7,6 @@
 #include "../core/caffeine_memory.h"
 #include "../core/caffeine_events.h"
 #include "../core/caffeine_input.h"
-#include "../core/ecs/caffeine_ecs.h"
 
 typedef struct
 {
@@ -60,10 +59,10 @@ bool caffeine_application_init(char *app_name)
 
     cff_platform_set_quit_clkb(_caffeine_on_quit);
 
-    if (!ecs_init())
-    {
-        return false;
-    }
+    // if (!ecs_init())
+    // {
+    //     return false;
+    // }
 
     caff_log(LOG_LEVEL_TRACE, "Application initalized\n");
     return true;
@@ -98,7 +97,7 @@ void caffeine_application_shutdown()
 
     cff_platform_shutdown();
 
-    ecs_end();
+    // ecs_end();
     caff_input_end();
     caffeine_event_shutdown();
     caff_log_end();

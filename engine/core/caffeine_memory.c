@@ -8,6 +8,7 @@ static uint64_t _count = 0;
 
 typedef struct
 {
+  uint32_t id;
   uint32_t size;
 } mem_header;
 
@@ -38,6 +39,7 @@ void *cff_mem_alloc(uint64_t size)
     _count++;
     mem_header *header = (mem_header *)ptr;
     header->size = size;
+    header->id = _count;
     _mem_allocked += size;
 
     char msg[128];
@@ -84,7 +86,7 @@ void cff_mem_release(void *ptr)
     _mem_allocked -= header->size;
 
     char msg[64];
-    sprintf(msg, "[%p] Freeded: %u | Tota: %llu\n", (void *)header, header->size, _mem_allocked);
+    sprintf(msg, "%u - [%p] Freeded: %u | Tota: %llu\n", header->id, (void *)header, header->size, _mem_allocked);
     cff_print_console(LOG_LEVEL_INFO, msg);
 
     cff_free(header);
