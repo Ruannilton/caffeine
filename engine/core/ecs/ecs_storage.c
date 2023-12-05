@@ -28,7 +28,6 @@ ecs_storage *ecs_storage_new(component_id *components, size_t *component_sizes, 
     storage->component_count = components_count;
 
     storage->entity_capacity = 4;
-    storage->entity_count = 0;
     storage->entities = (entity_id *)cff_mem_alloc(sizeof(entity_id) * storage->entity_capacity);
     storage->entity_data = (void **)cff_mem_alloc(sizeof(void *) * components_count);
 
@@ -39,6 +38,7 @@ ecs_storage *ecs_storage_new(component_id *components, size_t *component_sizes, 
         storage->entity_data[i] = buffer;
     }
 
+    storage->entity_count = 0;
     return storage;
 }
 
@@ -65,7 +65,7 @@ int ecs_storage_add_entity(ecs_storage *const storage, entity_id entity)
     if (storage->entity_count == storage->entity_capacity)
         _storage_resize(storage, storage->entity_capacity * 2);
 
-    int row = storage->entity_count;
+    uint32_t row = storage->entity_count;
 
     storage->entities[row] = entity;
 
@@ -137,7 +137,7 @@ static int _storage_get_component_index(const ecs_storage *const storage, compon
 
 static void _storage_resize(ecs_storage *const storage, uint32_t capacity)
 {
-    cff_resize_arr(storage->entities, capacity);
+    storage->entities = cff_resize_arr(storage->entities, capacity);
     for (size_t i = 0; i < storage->component_count; i++)
     {
         size_t component_size = storage->component_sizes[i];

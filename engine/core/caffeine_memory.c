@@ -10,6 +10,7 @@ typedef struct
 {
   uint32_t id;
   uint32_t size;
+  uint8_t freed;
 } mem_header;
 
 #endif
@@ -40,6 +41,7 @@ void *cff_mem_alloc(uint64_t size)
     mem_header *header = (mem_header *)ptr;
     header->size = size;
     header->id = _count;
+    header->freed = 0;
     _mem_allocked += size;
 
     char msg[128];
@@ -63,7 +65,7 @@ void *cff_mem_realloc(void *ptr, uint64_t size)
     mem_header *header = (mem_header *)((uintptr_t)ptr - sizeof(mem_header));
     _mem_allocked -= header->size;
 
-    mem_header *nheader = cff_realloc(header, size);
+    mem_header *nheader = cff_realloc(header, size + sizeof(mem_header));
     nheader->size = size;
     _mem_allocked += size;
 
@@ -83,12 +85,19 @@ void cff_mem_release(void *ptr)
   if (ptr != NULL)
   {
     mem_header *header = (mem_header *)((uintptr_t)ptr - sizeof(mem_header));
+    char msg[256] = {0};
+
+    if (header->freed == 1)
+    {
+      cff_print_console(LOG_LEVEL_INFO, "Double Free Detected!\n");
+      return;
+    }
+
+    header->freed = 1;
     _mem_allocked -= header->size;
 
-    char msg[64];
-    sprintf(msg, "%u - [%p] Freeded: %u | Tota: %llu\n", header->id, (void *)header, header->size, _mem_allocked);
+    sprintf(msg, "%u - [%p | %p] Freeded: %u | Tota: %llu\n", header->id, (void *)header, ptr, header->size, _mem_allocked);
     cff_print_console(LOG_LEVEL_INFO, msg);
-
     cff_free(header);
   }
 #else

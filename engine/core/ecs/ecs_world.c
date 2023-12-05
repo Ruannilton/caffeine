@@ -76,13 +76,12 @@ ecs_world *ecs_world_new()
 
 void ecs_world_release(ecs_world *world)
 {
+    ecs_release_component_index(world->components);
     ecs_entity_index_release(world->entities);
     ecs_storage_index_release(world->storages);
     ecs_component_dependency_release(world->dependencies);
     ecs_release_archetype_index(world->archetypes);
-    ecs_release_component_index(world->components);
     cff_mem_release(world);
-    *world = (ecs_world){0};
 }
 
 component_id ecs_world_add_component(ecs_world *world, const char *name, size_t size, size_t align)

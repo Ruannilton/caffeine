@@ -2,6 +2,10 @@
 
 #include "ecs_types.h"
 
+/*
+    estrutura para armazenar os archetypes, internamente utiliza um hashmap para relacionar o id ao dados do archetype.
+
+*/
 typedef struct archetype_index archetype_index;
 
 archetype_index *ecs_new_archetype_index(uint32_t capacity);

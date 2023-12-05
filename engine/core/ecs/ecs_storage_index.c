@@ -41,7 +41,22 @@ void ecs_storage_index_set(storage_index *index, archetype_id arch_id, ecs_stora
 {
     if (arch_id > index->capacity)
     {
-        cff_resize_arr(index->storages, arch_id + 1);
+        uint32_t new_capacity = index->capacity * 2;
+
+        while (arch_id > new_capacity)
+        {
+            new_capacity *= 2;
+        }
+
+        index->storages = cff_resize_arr(index->storages, new_capacity);
+        index->capacity = new_capacity;
+    }
+
+    if (index->count == index->capacity)
+    {
+        uint32_t new_capacity = index->capacity * 2;
+        index->storages = cff_resize_arr(index->storages, new_capacity);
+        index->capacity = new_capacity;
     }
 
     index->storages[arch_id] = storage;

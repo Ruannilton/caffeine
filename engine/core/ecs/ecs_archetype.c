@@ -156,7 +156,7 @@ void ecs_archetype_add_component(archetype_index *index, archetype_id archetype,
     archetype_info *info = index->data + archetype;
     if (info->lenght == info->capacity)
     {
-        cff_resize_arr(info->components, info->capacity * 2);
+        info->components = cff_resize_arr(info->components, info->capacity * 2);
         info->capacity *= 2;
     }
 
@@ -225,7 +225,6 @@ void ecs_release_archetype_index(archetype_index *index)
         {
             archetype_info *info = index->data + i;
             cff_mem_release(info->components);
-            cff_mem_zero(info->components, sizeof(component_id), info->capacity * sizeof(component_id));
         }
     }
 

@@ -55,7 +55,7 @@ entity_id ecs_entity_index_new_entity(entity_index *index)
 
     if (index->count == index->capacity)
     {
-        cff_resize_arr(index->data, index->capacity * 2);
+        index->data = cff_resize_arr(index->data, index->capacity * 2);
         index->capacity *= 2;
     }
     entity_id id = (entity_id)index->count;
@@ -80,7 +80,7 @@ void ecs_entity_index_remove_entity(entity_index *index, entity_id id)
 
     if (index->trash_count == index->trash_capacity)
     {
-        cff_resize_arr(index->trash, index->trash_capacity * 2);
+        index->trash = cff_resize_arr(index->trash, index->trash_capacity * 2);
         index->trash_capacity *= 2;
     }
 
