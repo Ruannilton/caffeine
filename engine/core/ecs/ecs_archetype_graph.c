@@ -47,7 +47,7 @@ archetype_graph *ecs_archetype_graph_new()
     graph->capacity = capacity;
     graph->count = 0;
 
-    cff_mem_zero(graph->nodes, sizeof(graph_node), sizeof(graph_node) * capacity);
+    cff_mem_zero(graph->nodes, sizeof(graph_node) * capacity);
 
     init_new_node(graph, INVALID_ID, (uint32_t)-1);
 
@@ -310,8 +310,8 @@ static bool add_component_to_node(archetype_graph *graph, uint32_t node_index, c
     if (node_ptr->edge_count == node_ptr->edge_capacity)
     { // TODO: handle allocation
         uint32_t new_capacity = node_ptr->edge_capacity * 2;
-        node_ptr->edges = cff_mem_realloc(node_ptr->edges, new_capacity);
-        node_ptr->components = cff_mem_realloc(node_ptr->components, new_capacity);
+        node_ptr->edges = (graph_edge *)cff_mem_realloc(node_ptr->edges, new_capacity);
+        node_ptr->components = (component_id *)cff_mem_realloc(node_ptr->components, new_capacity);
         node_ptr->edge_capacity = new_capacity;
     }
 
@@ -382,8 +382,8 @@ static uint32_t init_new_node(archetype_graph *graph, archetype_id arch_id, uint
     node_ptr->edge_capacity = 4;
     node_ptr->edge_count = 0;
 
-    node_ptr->components = cff_mem_alloc(sizeof(component_id) * node_ptr->edge_capacity);
-    node_ptr->edges = cff_mem_alloc(sizeof(graph_edge) * node_ptr->edge_capacity);
+    node_ptr->components = (component_id *)cff_mem_alloc(sizeof(component_id) * node_ptr->edge_capacity);
+    node_ptr->edges = (graph_edge *)cff_mem_alloc(sizeof(graph_edge) * node_ptr->edge_capacity);
     graph->count++;
 
     component_id def_value = INVALID_ID;

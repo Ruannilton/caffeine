@@ -13,78 +13,78 @@ typedef struct
 
 struct component_index
 {
-    component_info *data;
+    component_info *data_owning;
     uint32_t count;
     uint32_t capacity;
 };
 
 component_index *ecs_new_component_index(uint32_t capacity)
 {
-    component_index *instance = (component_index *)cff_mem_alloc(sizeof(component_index));
+    component_index *instance_owning = (component_index *)cff_mem_alloc(sizeof(component_index));
 
-    if (instance == NULL)
-        return instance;
+    if (instance_owning == NULL)
+        return instance_owning;
 
-    instance->capacity = capacity;
-    instance->count = 0;
-    instance->data = cff_mem_alloc(capacity * sizeof(component_info));
+    component_info *buffer_owning = (component_info *)cff_mem_alloc(capacity * sizeof(component_info));
 
-    if (instance->data == NULL)
+    if (buffer_owning == NULL)
     {
-        cff_mem_release(instance);
+        cff_mem_release(instance_owning);
         return NULL;
     }
 
-    cff_mem_zero(instance->data, sizeof(component_info), capacity * sizeof(component_info));
+    cff_mem_zero(buffer_owning, capacity * sizeof(component_info));
 
-    return instance;
+    instance_owning->capacity = capacity;
+    instance_owning->count = 0;
+    instance_owning->data_owning = buffer_owning;
+
+    return instance_owning;
 }
 
-component_id ecs_register_component(component_index *index, const char *name, size_t size, size_t align)
+component_id ecs_register_component(component_index *const index_mut_ref, const char *name, size_t size, size_t align)
 {
-    component_id id = index->count;
+    component_id id = index_mut_ref->count;
 
-    if (index->count == index->capacity)
+    if (index_mut_ref->count == index_mut_ref->capacity)
     {
-        index->data = cff_resize_arr(index->data, index->capacity * 2);
-        index->capacity *= 2;
+        index_mut_ref->data_owning = cff_resize_arr(index_mut_ref->data_owning, index_mut_ref->capacity * 2);
+        index_mut_ref->capacity *= 2;
     }
 
     component_info info = {
-        .align = align,
         .id = id,
         .name = name,
         .size = size,
+        .align = align,
     };
 
-    index->data[id] = info;
-    index->count++;
+    index_mut_ref->data_owning[id] = info;
+    index_mut_ref->count++;
     return id;
 }
 
-size_t ecs_get_component_size(component_index *index, component_id id)
+size_t ecs_get_component_size(const component_index *const index_ref, component_id id)
 {
-    if (id >= index->count)
+    if (id >= index_ref->count)
         return 0;
-    return index->data[id].size;
+    return index_ref->data_owning[id].size;
 }
 
-size_t ecs_get_component_align(component_index *index, component_id id)
+size_t ecs_get_component_align(const component_index *const index_ref, component_id id)
 {
-    if (id >= index->count)
+    if (id >= index_ref->count)
         return 0;
-    return index->data[id].align;
+    return index_ref->data_owning[id].align;
 }
 
-void ecs_remove_component(component_index *index, component_id id)
+void ecs_remove_component(component_index *const index_mut_ref, component_id id)
 {
-    index->data[id] = (component_info){0};
+    index_mut_ref->data_owning[id] = (component_info){.id = 0, .name = 0, .size = 0, .align = 0};
 }
-// fix mem leak
-void ecs_release_component_index(component_index *index)
+
+void ecs_release_component_index(const component_index *const index_owning)
 {
-    // cff_mem_zero(index->data, sizeof(component_info), index->capacity * sizeof(component_info));
-    cff_mem_release(index->data);
-    *index = (component_index){0};
-    cff_mem_release(index);
+    cff_mem_release(index_owning->data_owning);
+    cff_mem_release(index_owning);
 }

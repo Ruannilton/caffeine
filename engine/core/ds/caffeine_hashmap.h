@@ -42,24 +42,24 @@
     bool _generated_##NAME##_cmp_key_fn(KEY_TYPE *a, KEY_TYPE *b) { return memcmp(a, b, sizeof(KEY_TYPE)) == 0; } \
     bool _generated_##NAME##_cmp_data_fn(DATA_TYPE *a, DATA_TYPE *b) { return memcmp(a, b, sizeof(DATA_TYPE)) == 0; }
 
-#define cff_hash_init(HASH_PTR, CAPACITY, HASH_KEY_FN, CMP_KEY_FN, CMP_DATA_FN)                \
-    do                                                                                         \
-    {                                                                                          \
-        __typeof__(HASH_PTR) __m_ptr_3 = (HASH_PTR);                                           \
-        uint32_t __m_capacity_3 = (uint32_t)(CAPACITY);                                        \
-        __typeof__(HASH_KEY_FN) *__m_hash_key_fn_3 = (HASH_KEY_FN);                            \
-        __typeof__(CMP_KEY_FN) *__m_cmp_key_fn_3 = (CMP_KEY_FN);                               \
-        __typeof__(CMP_DATA_FN) *__m_cmp_data_fn_3 = (CMP_DATA_FN);                            \
-        alloc_gen_array(__m_ptr_3->data_buffer, __m_capacity_3);                               \
-        alloc_gen_array(__m_ptr_3->key_buffer, __m_capacity_3);                                \
-        alloc_gen_array(__m_ptr_3->used_slot, __m_capacity_3);                                 \
-        cff_mem_zero(__m_ptr_3->used_slot, sizeof(uint8_t), __m_capacity_3 * sizeof(uint8_t)); \
-        __m_ptr_3->hash_key_fn = __m_hash_key_fn_3;                                            \
-        __m_ptr_3->cmp_key_fn = __m_cmp_key_fn_3;                                              \
-        __m_ptr_3->cmp_data_fn = __m_cmp_data_fn_3;                                            \
-        __m_ptr_3->count = 0;                                                                  \
-        __m_ptr_3->colision_count = 0;                                                         \
-        __m_ptr_3->capacity = __m_capacity_3;                                                  \
+#define cff_hash_init(HASH_PTR, CAPACITY, HASH_KEY_FN, CMP_KEY_FN, CMP_DATA_FN) \
+    do                                                                          \
+    {                                                                           \
+        __typeof__(HASH_PTR) __m_ptr_3 = (HASH_PTR);                            \
+        uint32_t __m_capacity_3 = (uint32_t)(CAPACITY);                         \
+        __typeof__(HASH_KEY_FN) *__m_hash_key_fn_3 = (HASH_KEY_FN);             \
+        __typeof__(CMP_KEY_FN) *__m_cmp_key_fn_3 = (CMP_KEY_FN);                \
+        __typeof__(CMP_DATA_FN) *__m_cmp_data_fn_3 = (CMP_DATA_FN);             \
+        alloc_gen_array(__m_ptr_3->data_buffer, __m_capacity_3);                \
+        alloc_gen_array(__m_ptr_3->key_buffer, __m_capacity_3);                 \
+        alloc_gen_array(__m_ptr_3->used_slot, __m_capacity_3);                  \
+        cff_mem_zero(__m_ptr_3->used_slot, __m_capacity_3 * sizeof(uint8_t));   \
+        __m_ptr_3->hash_key_fn = __m_hash_key_fn_3;                             \
+        __m_ptr_3->cmp_key_fn = __m_cmp_key_fn_3;                               \
+        __m_ptr_3->cmp_data_fn = __m_cmp_data_fn_3;                             \
+        __m_ptr_3->count = 0;                                                   \
+        __m_ptr_3->colision_count = 0;                                          \
+        __m_ptr_3->capacity = __m_capacity_3;                                   \
     } while (0);
 
 #define cff_hash_init_default(NAME, HASH_PTR, CAPACITY) cff_hash_init((HASH_PTR), (CAPACITY), (_generated_##NAME##_hash_fn), (_generated_##NAME##_cmp_key_fn), (_generated_##NAME##_cmp_data_fn))
@@ -80,7 +80,7 @@
             alloc_gen_array(__n_data_buffer, __n_capacity);                                                       \
             alloc_gen_array(__n_key_buffer, __n_capacity);                                                        \
             alloc_gen_array(__n_used_buffer, __n_capacity);                                                       \
-            cff_mem_zero(__n_used_buffer, sizeof(uint8_t), __n_capacity * sizeof(uint8_t));                       \
+            cff_mem_zero(__n_used_buffer, __n_capacity * sizeof(uint8_t));                                        \
             for (uint32_t __m_i = 0; __m_i < __m_ptr_3->count; __m_i++)                                           \
             {                                                                                                     \
                 __typeof__(__n_key_buffer[0]) __curr_key = __m_ptr_3->key_buffer[__m_i];                          \
@@ -234,7 +234,7 @@
         alloc_gen_array(m_ptr->data_buffer, capacity);                                                \
         alloc_gen_array(m_ptr->key_buffer, capacity);                                                 \
         alloc_gen_array(m_ptr->used_slot, capacity);                                                  \
-        cff_mem_zero(m_ptr->used_slot, sizeof(uint8_t), capacity * sizeof(uint8_t));                  \
+        cff_mem_zero(m_ptr->used_slot, capacity * sizeof(uint8_t));                                   \
     }                                                                                                 \
     uint32_t NAME##_resolve_collision(NAME *m_ptr, KEY_TYPE key, uint32_t hash_index, DATA_TYPE data) \
     {                                                                                                 \
@@ -263,7 +263,7 @@
         KEY_TYPE *n_key_buffer = cff_new_arr(KEY_TYPE, new_capacity);                                 \
         uint8_t *n_used_buffer = cff_new_arr(uint8_t, new_capacity);                                  \
         uint32_t n_max_collision = 0;                                                                 \
-        cff_mem_zero(n_used_buffer, sizeof(uint8_t), new_capacity * sizeof(uint8_t));                 \
+        cff_mem_zero(n_used_buffer, new_capacity * sizeof(uint8_t));                                  \
         for (uint32_t m_i = 0; m_i < m_ptr->count; m_i++)                                             \
         {                                                                                             \
             KEY_TYPE curr_key = m_ptr->key_buffer[m_i];                                               \
@@ -313,6 +313,27 @@
             if (m_ptr->cmp_key_fn(&key, &tmp_key))                                                    \
             {                                                                                         \
                 *result = m_ptr->data_buffer[hash_index];                                             \
+                found = 1;                                                                            \
+                break;                                                                                \
+            }                                                                                         \
+            hash_collision++;                                                                         \
+            if (hash_collision > m_ptr->colision_count)                                               \
+                break;                                                                                \
+            hash_index = (m_ptr->hash_key_fn(&key, hash_collision) % m_ptr->capacity);                \
+        }                                                                                             \
+        return found;                                                                                 \
+    }                                                                                                 \
+    int8_t NAME##_get_ref(NAME *m_ptr, KEY_TYPE key, DATA_TYPE **result)                              \
+    {                                                                                                 \
+        uint32_t hash_collision = 0;                                                                  \
+        uint32_t hash_index = (m_ptr->hash_key_fn(&key, hash_collision) % m_ptr->capacity);           \
+        int8_t found = 0;                                                                             \
+        while (m_ptr->used_slot[hash_index])                                                          \
+        {                                                                                             \
+            KEY_TYPE tmp_key = m_ptr->key_buffer[hash_index];                                         \
+            if (m_ptr->cmp_key_fn(&key, &tmp_key))                                                    \
+            {                                                                                         \
+                *result = &(m_ptr->data_buffer[hash_index]);                                          \
                 found = 1;                                                                            \
                 break;                                                                                \
             }                                                                                         \

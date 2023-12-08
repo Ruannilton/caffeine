@@ -3,6 +3,8 @@
 #include "../caffeine_memory.h"
 #include "ecs_archetype_graph.h"
 
+#define INVALID_INDEX (uint32_t)(0xffffffff)
+
 typedef struct
 {
     uint32_t lenght;
@@ -12,9 +14,9 @@ typedef struct
 
 struct archetype_index
 {
-    uint32_t *map;
-    uint32_t *reverse_map;
-    archetype_info *data;
+    uint32_t *keys;
+    uint32_t *reverse_keys;
+    archetype_info *values;
     uint32_t count;
     uint32_t capacity;
     uint32_t max_collision;
@@ -37,58 +39,58 @@ archetype_index *ecs_new_archetype_index(uint32_t capacity)
     instance->capacity = capacity;
     instance->count = 0;
     instance->max_collision = 0;
-    instance->data = cff_mem_alloc(capacity * sizeof(archetype_info));
+    instance->values = (archetype_info *)cff_mem_alloc(capacity * sizeof(archetype_info));
 
-    if (instance->data == NULL)
+    if (instance->values == NULL)
     {
         cff_mem_release(instance);
         return NULL;
     }
 
-    instance->map = cff_mem_alloc(capacity * sizeof(uint32_t));
-    if (instance->map == NULL)
+    instance->keys = (uint32_t *)cff_mem_alloc(capacity * sizeof(uint32_t));
+    if (instance->keys == NULL)
     {
-        cff_mem_release(instance->data);
+        cff_mem_release(instance->values);
         cff_mem_release(instance);
         return NULL;
     }
 
-    instance->reverse_map = cff_mem_alloc(capacity * sizeof(uint32_t));
-    if (instance->reverse_map == NULL)
+    instance->reverse_keys = (uint32_t *)cff_mem_alloc(capacity * sizeof(uint32_t));
+    if (instance->reverse_keys == NULL)
     {
-        cff_mem_release(instance->map);
-        cff_mem_release(instance->data);
+        cff_mem_release(instance->keys);
+        cff_mem_release(instance->values);
         cff_mem_release(instance);
         return NULL;
     }
 
-    uint32_t init_val = (uint32_t)-1;
-    cff_mem_zero(instance->data, sizeof(archetype_info), capacity * sizeof(archetype_info));
-    cff_mem_set(&init_val, instance->map, sizeof(uint32_t), capacity * sizeof(uint32_t));
-    cff_mem_set(&init_val, instance->reverse_map, sizeof(uint32_t), capacity * sizeof(uint32_t));
+    uint32_t init_val = INVALID_INDEX;
+    cff_mem_zero(instance->values, capacity * sizeof(archetype_info));
+    cff_mem_set(&init_val, instance->keys, sizeof(uint32_t), capacity * sizeof(uint32_t));
+    cff_mem_set(&init_val, instance->reverse_keys, sizeof(uint32_t), capacity * sizeof(uint32_t));
 
     instance->graph = ecs_archetype_graph_new();
 
     return instance;
 }
 
-archetype_id ecs_register_archetype(archetype_index *index, uint32_t count, component_id components[])
+archetype_id ecs_register_archetype(archetype_index *const index, ecs_archetype archetype_owning)
 {
     archetype_id id = index->count;
 
     uint32_t seed = 71;
-    uint32_t hash = hash_archetype(count, components, seed) % index->capacity;
+    uint32_t hash = hash_archetype(archetype_owning.count, archetype_owning.components, seed) % index->capacity;
     uint32_t colision_count = 0;
 
-    while (index->map[hash] != (uint32_t)-1)
+    while (index->keys[hash] != INVALID_INDEX)
     {
-        archetype_info *info = index->data + index->map[hash];
-        if (compare_archetype(min(info->lenght, count), info->components, components))
+        archetype_info *info = index->values + index->keys[hash];
+        if (compare_archetype(min(info->lenght, archetype_owning.count), info->components, archetype_owning.components))
         {
-            return index->map[hash];
+            return index->keys[hash];
         }
         seed *= 2;
-        hash = hash_archetype(count, components, seed) % index->capacity;
+        hash = hash_archetype(archetype_owning.count, archetype_owning.components, seed) % index->capacity;
         colision_count++;
     }
 
@@ -96,33 +98,33 @@ archetype_id ecs_register_archetype(archetype_index *index, uint32_t count, comp
         index->max_collision = colision_count;
 
     archetype_info info = {
-        .components = components,
-        .lenght = count,
-        .capacity = count,
+        .lenght = archetype_owning.count,
+        .capacity = archetype_owning.count,
+        .components = archetype_owning.components,
     };
 
-    index->data[id] = info;
-    index->map[hash] = id;
-    index->reverse_map[id] = hash;
+    index->values[id] = info;
+    index->keys[hash] = id;
+    index->reverse_keys[id] = hash;
     index->count++;
 
-    ecs_archetype_graph_add(index->graph, id, count, components);
+    ecs_archetype_graph_add(index->graph, id, archetype_owning.count, archetype_owning.components);
 
     return id;
 }
 
-archetype_id ecs_get_archetype_id(archetype_index *index, uint32_t count, component_id components[])
+archetype_id ecs_get_archetype_id(const archetype_index *const index, uint32_t count, const component_id *const components)
 {
     uint32_t seed = 71;
     uint32_t hash = hash_archetype(count, components, seed) % index->capacity;
     uint32_t tries = 1;
 
-    while (index->map[hash] != (uint32_t)-1)
+    while (index->keys[hash] != INVALID_INDEX)
     {
-        archetype_info *info = index->data + index->map[hash];
+        archetype_info *info = index->values + index->keys[hash];
         if (compare_archetype(min(info->lenght, count), info->components, components))
         {
-            return index->map[hash];
+            return index->keys[hash];
         }
 
         seed *= 2;
@@ -136,9 +138,9 @@ archetype_id ecs_get_archetype_id(archetype_index *index, uint32_t count, compon
     return INVALID_ID;
 }
 
-bool ecs_archetype_has_component(archetype_index *index, archetype_id archetype, component_id component)
+bool ecs_archetype_has_component(const archetype_index *const index, archetype_id archetype, component_id component)
 {
-    archetype_info *info = index->data + archetype;
+    archetype_info *info = index->values + archetype;
     for (size_t i = 0; i < info->lenght; i++)
     {
         if (info->components[i] == component)
@@ -148,19 +150,20 @@ bool ecs_archetype_has_component(archetype_index *index, archetype_id archetype,
     return false;
 }
 
-void ecs_archetype_add_component(archetype_index *index, archetype_id archetype, component_id component)
+void ecs_archetype_add_component(archetype_index *const index, archetype_id archetype, component_id component)
 {
     if (ecs_archetype_has_component(index, archetype, component))
         return;
 
-    archetype_info *info = index->data + archetype;
+    archetype_info *info = index->values + archetype;
+
     if (info->lenght == info->capacity)
     {
         info->components = cff_resize_arr(info->components, info->capacity * 2);
         info->capacity *= 2;
     }
 
-    uint32_t idx = -1;
+    uint32_t idx = INVALID_INDEX;
     for (size_t i = 0; i < info->lenght; i++)
     {
         if (info->components[i] < component)
@@ -178,12 +181,12 @@ void ecs_archetype_add_component(archetype_index *index, archetype_id archetype,
     info->lenght++;
 }
 
-void ecs_archetype_remove_component(archetype_index *index, archetype_id archetype, component_id component)
+void ecs_archetype_remove_component(archetype_index *const index, archetype_id archetype, component_id component)
 {
     if (!ecs_archetype_has_component(index, archetype, component))
         return;
 
-    archetype_info *info = index->data + archetype;
+    archetype_info *info = index->values + archetype;
     uint32_t idx = 0;
 
     for (size_t i = 0; i < info->lenght; i++)
@@ -203,53 +206,60 @@ void ecs_archetype_remove_component(archetype_index *index, archetype_id archety
     info->lenght--;
 }
 
-void ecs_remove_archetype(archetype_index *index, archetype_id id)
+void ecs_remove_archetype(archetype_index *const index, archetype_id id)
 {
     if (index->count == 0)
         return;
 
-    uint32_t hash = index->reverse_map[id];
-    index->map[hash] = -1;
-    index->reverse_map[id] = -1;
-    index->data[id] = (archetype_info){0};
+    if (id >= index->count)
+        return;
+
+    uint32_t hash = index->reverse_keys[id];
+    index->keys[hash] = INVALID_INDEX;
+    index->reverse_keys[id] = INVALID_INDEX;
+    index->values[id] = (archetype_info){
+        .lenght = 0,
+        .capacity = 0,
+        .components = NULL,
+    };
     index->count--;
 }
+
 // fix mem leak
-void ecs_release_archetype_index(archetype_index *index)
+void ecs_release_archetype_index(const archetype_index *const index)
 {
     ecs_archetype_graph_release(index->graph);
 
     for (size_t i = 0; i < index->count; i++)
     {
-        if (index->map[index->reverse_map[i]] != -1)
+        if (index->keys[index->reverse_keys[i]] != INVALID_INDEX)
         {
-            archetype_info *info = index->data + i;
+            archetype_info *info = index->values + i;
             cff_mem_release(info->components);
         }
     }
 
-    cff_mem_release(index->data);
-    cff_mem_release(index->map);
-    cff_mem_release(index->reverse_map);
+    cff_mem_release(index->values);
+    cff_mem_release(index->keys);
+    cff_mem_release(index->reverse_keys);
 
-    uint32_t init_val = (uint32_t)-1;
-    cff_mem_zero(index->data, sizeof(archetype_info), index->capacity * sizeof(archetype_info));
-    cff_mem_set(&init_val, index->map, sizeof(uint32_t), index->capacity * sizeof(uint32_t));
-    cff_mem_set(&init_val, index->reverse_map, sizeof(uint32_t), index->capacity * sizeof(uint32_t));
+    // uint32_t init_val = (uint32_t)-1;
+    // cff_mem_zero(index->values, sizeof(archetype_info), index->capacity * sizeof(archetype_info));
+    // cff_mem_set(&init_val, index->keys, sizeof(uint32_t), index->capacity * sizeof(uint32_t));
+    // cff_mem_set(&init_val, index->reverse_keys, sizeof(uint32_t), index->capacity * sizeof(uint32_t));
 
-    *index = (archetype_index){0};
     cff_mem_release(index);
 }
 
-uint32_t ecs_archetype_get_components(archetype_index *index, archetype_id id, const component_id *out)
+uint32_t ecs_archetype_get_components(archetype_index *index, archetype_id id, const component_id **out)
 {
-    if (index->reverse_map[id] != -1)
+    if (index->reverse_keys[id] != INVALID_INDEX)
     {
-        out = index->data[id].components;
-        return index->data[id].lenght;
+        *out = index->values[id].components;
+        return index->values[id].lenght;
     }
 
-    out = NULL;
+    *out = NULL;
     return 0;
 }
 

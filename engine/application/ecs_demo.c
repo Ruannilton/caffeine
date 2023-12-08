@@ -43,7 +43,7 @@ void ecs_setup_test()
     position_component pos = {.x = 5, .y = 7, .z = -1};
     ecs_world_set_entity_component(world, e_runner, position_id, &pos);
 
-    position_component *result = ecs_world_get_entity_component(world, e_runner, position_id);
+    position_component *result = (position_component *)ecs_world_get_entity_component(world, e_runner, position_id);
 
     printf("%d, %d, %d\n", result->x, result->y, result->z);
 

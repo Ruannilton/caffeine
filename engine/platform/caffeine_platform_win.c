@@ -42,7 +42,7 @@ LRESULT CALLBACK win32_proccess_message(HWND hwnd, UINT mesage, WPARAM w_param, 
 static HWND _cff_windowns_create_window(HINSTANCE h_instance, LPCSTR window_title)
 {
   HICON icon = LoadIcon(h_instance, IDI_APPLICATION);
-  WNDCLASSA window_class = {0};
+  WNDCLASSA window_class = (WNDCLASSA){0};
 
   window_class.style = CS_DBLCLKS;
   window_class.lpfnWndProc = win32_proccess_message;
@@ -76,7 +76,12 @@ static HWND _cff_windowns_create_window(HINSTANCE h_instance, LPCSTR window_titl
   uint32_t window_style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
   uint32_t window_ex_style = WS_EX_APPWINDOW;
 
-  RECT border_rect = {0};
+  RECT border_rect = {
+      .left = 0,
+      .top = 0,
+      .right = 0,
+      .bottom = 0,
+  };
   AdjustWindowRectEx(&border_rect, window_style, 0, window_ex_style);
 
   window_x += border_rect.left;
@@ -192,7 +197,7 @@ void cff_platform_set_resize_clkb(cff_platform_resize_clbk clbk)
     resize_clbk = clbk;
 }
 
-void cff_print_console(log_level level, char *message)
+void cff_print_console(log_level level, const char *const message)
 {
 
   HANDLE console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -214,7 +219,7 @@ void cff_print_console(log_level level, char *message)
   SetConsoleTextAttribute(console_handle, Info.wAttributes);
 }
 
-void cff_print_error(log_level level, char *message)
+void cff_print_error(log_level level, const char *const message)
 {
   HANDLE console_handle = GetStdHandle(STD_ERROR_HANDLE);
 

@@ -50,14 +50,14 @@ void *cff_stack_alloc(uint64_t size);
  * @param size The new size of the memory.
  * @return A pointer to the reallocated memory.
  */
-void *cff_realloc(void *ptr, uint64_t size);
+void *cff_realloc(const void *ptr_owning, uint64_t size);
 
 /**
  * @brief Frees memory allocated with cff_malloc or cff_realloc.
  *
  * @param ptr The pointer to the memory to free.
  */
-void cff_free(void *ptr);
+void cff_free(const void *const ptr_owning);
 
 /**
  * @brief Frees memory allocated from the stack.
@@ -114,11 +114,11 @@ bool cff_mem_cmp(const void *const from, const void *const dest, uint64_t size);
 void cff_mem_set(const void *data, void *dest, uint64_t data_size,
                  uint64_t buffer_lenght);
 
-void cff_mem_zero(void *dest, uint64_t data_size, uint64_t buffer_lenght);
+void cff_mem_zero(void *const dest, uint64_t buffer_lenght);
 
-void cff_print_console(log_level level, char *message);
+void cff_print_console(log_level level, const char *const message);
 
-void cff_print_error(log_level level, char *message);
+void cff_print_error(log_level level, const char *const message);
 
 void *cff_platform_create_file(const char *path);
 

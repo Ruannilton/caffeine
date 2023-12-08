@@ -4,9 +4,6 @@
 
 typedef struct ecs_storage ecs_storage;
 
-ecs_storage *ecs_storage_new(component_id *components, size_t *component_sizes, uint32_t components_count);
-void ecs_storage_release(ecs_storage *storage);
-
 int ecs_storage_add_entity(ecs_storage *const storage, entity_id entity);
 entity_id ecs_storage_remove_entity(ecs_storage *const storage, int row);
 

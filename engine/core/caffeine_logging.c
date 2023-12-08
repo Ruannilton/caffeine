@@ -24,7 +24,7 @@ void caff_log_end()
   caff_log(LOG_LEVEL_TRACE, "Log system down\n");
 }
 
-void caff_log(log_level level, const char *message, ...)
+__declspec(dllexport) void caff_log(log_level level, const char *message, ...)
 {
 
 #ifdef CFF_MSVC
@@ -35,12 +35,11 @@ void caff_log(log_level level, const char *message, ...)
 
   va_start(arg_ptr, message);
   char buffer[PRINT_BUFER_LEN] = {0};
-  vsnprintf((char *const)buffer, PRINT_BUFER_LEN, message, arg_ptr);
+  vsnprintf_s((char *const)buffer, PRINT_BUFER_LEN, PRINT_BUFER_LEN, message, arg_ptr);
   va_end(arg_ptr);
 
   char buffer2[PRINT_BUFER_LEN] = {0};
-  sprintf(buffer2, "[%s] %s", LOG_NAMES[level], buffer);
-
+  sprintf_s(buffer2, PRINT_BUFER_LEN, "[%s] %s", LOG_NAMES[level], buffer);
   cff_print_console(level, buffer2);
 }
 
@@ -55,11 +54,11 @@ CAFF_API void caff_raw_log(const char *message, ...)
 
   va_start(arg_ptr, message);
   char buffer[PRINT_BUFER_LEN] = {0};
-  vsnprintf((char *const)buffer, PRINT_BUFER_LEN, message, arg_ptr);
+  vsnprintf_s((char *const)buffer, PRINT_BUFER_LEN, PRINT_BUFER_LEN, message, arg_ptr);
   va_end(arg_ptr);
 
   char buffer2[PRINT_BUFER_LEN] = {0};
-  sprintf(buffer2, "%s", buffer);
+  sprintf_s(buffer2, PRINT_BUFER_LEN, "%s", buffer);
 
   cff_print_console(LOG_LEVEL_DEBUG, buffer2);
 }

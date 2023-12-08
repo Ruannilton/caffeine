@@ -75,7 +75,7 @@ void ecs_entity_index_remove_entity(entity_index *index, entity_id id)
 {
     if (id < index->capacity)
     {
-        index->data[id] = (entity_record){0};
+        index->data[id] = (entity_record){.row = 0, .storage = 0};
     }
 
     if (index->trash_count == index->trash_capacity)
@@ -94,5 +94,5 @@ entity_record ecs_entity_index_get_entity(entity_index *index, entity_id id)
     {
         return index->data[id];
     }
-    return (entity_record){0};
+    return (entity_record){.row = 0, .storage = 0};
 }

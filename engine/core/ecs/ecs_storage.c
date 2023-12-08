@@ -1,48 +1,36 @@
 #include "ecs_storage.h"
 #include "../caffeine_memory.h"
 
-struct ecs_storage
-{
-    size_t *component_sizes;
-    component_id *components;
-    uint32_t component_count;
-
-    uint32_t entity_count;
-    uint32_t entity_capacity;
-    entity_id *entities;
-    void **entity_data;
-};
+#include "ecs_storage_type.h"
 
 static int _storage_get_component_index(const ecs_storage *const storage, component_id id);
 static void _storage_resize(ecs_storage *const storage, uint32_t capacity);
 
-ecs_storage *ecs_storage_new(component_id *components, size_t *component_sizes, uint32_t components_count)
+ecs_storage ecs_storage_new(component_id *components, size_t *component_sizes, uint32_t components_count)
 {
-    if (components == NULL || components_count == 0)
-        return NULL;
 
-    ecs_storage *storage = (ecs_storage *)cff_mem_alloc(sizeof(storage));
+    ecs_storage storage = (ecs_storage){0};
 
-    storage->component_sizes = component_sizes;
-    storage->components = components;
-    storage->component_count = components_count;
+    storage.component_sizes = component_sizes;
+    storage.components = components;
+    storage.component_count = components_count;
 
-    storage->entity_capacity = 4;
-    storage->entities = (entity_id *)cff_mem_alloc(sizeof(entity_id) * storage->entity_capacity);
-    storage->entity_data = (void **)cff_mem_alloc(sizeof(void *) * components_count);
+    storage.entity_capacity = 4;
+    storage.entities = (entity_id *)cff_mem_alloc(sizeof(entity_id) * storage.entity_capacity);
+    storage.entity_data = (void **)cff_mem_alloc(sizeof(void *) * components_count);
 
     for (size_t i = 0; i < components_count; i++)
     {
         size_t component_size = component_sizes[i];
-        void *buffer = cff_mem_alloc((uint64_t)(component_size * storage->entity_capacity));
-        storage->entity_data[i] = buffer;
+        void *buffer = cff_mem_alloc((uint64_t)(component_size * storage.entity_capacity));
+        storage.entity_data[i] = buffer;
     }
 
-    storage->entity_count = 0;
+    storage.entity_count = 0;
     return storage;
 }
 
-void ecs_storage_release(ecs_storage *storage)
+void ecs_storage_release(const ecs_storage *const storage)
 {
     if (storage == NULL)
         return;
@@ -57,7 +45,6 @@ void ecs_storage_release(ecs_storage *storage)
     cff_mem_release(storage->entities);
     cff_mem_release(storage->component_sizes);
     cff_mem_release(storage->components);
-    cff_mem_release(storage);
 }
 
 int ecs_storage_add_entity(ecs_storage *const storage, entity_id entity)
