@@ -124,7 +124,7 @@ static int _storage_get_component_index(const ecs_storage *const storage, compon
 
 static void _storage_resize(ecs_storage *const storage, uint32_t capacity)
 {
-    storage->entities = cff_resize_arr(storage->entities, capacity);
+    storage->entities = CFF_ARR_RESIZE(storage->entities, capacity);
     for (size_t i = 0; i < storage->component_count; i++)
     {
         size_t component_size = storage->component_sizes[i];

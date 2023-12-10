@@ -29,3 +29,9 @@
 #else
 #endif
 #define CFF_C
+
+#ifdef CFF_CLANG
+#define __CFF_FILE_NAME__ __FILE_NAME__
+#else
+#define __CFF_FILE_NAME__ __FILE__
+#endif

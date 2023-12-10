@@ -56,16 +56,16 @@ void ecs_storage_index_new_storage(storage_index *const index, archetype_id arch
             new_capacity *= 2;
         }
 
-        index->storages = cff_resize_arr(index->storages, new_capacity);
-        index->used = cff_resize_arr(index->used, new_capacity);
+        index->storages = CFF_ARR_RESIZE(index->storages, new_capacity);
+        index->used = CFF_ARR_RESIZE(index->used, new_capacity);
         index->capacity = new_capacity;
     }
 
     if (index->count == index->capacity)
     {
         uint32_t new_capacity = index->capacity * 2;
-        index->storages = cff_resize_arr(index->storages, new_capacity);
-        index->used = cff_resize_arr(index->used, new_capacity);
+        index->storages = CFF_ARR_RESIZE(index->storages, new_capacity);
+        index->used = CFF_ARR_RESIZE(index->used, new_capacity);
         index->capacity = new_capacity;
     }
 

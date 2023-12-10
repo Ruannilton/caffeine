@@ -5,7 +5,7 @@
 
 #define cff_release(A) cff_mem_release((void *)A)
 
-#define alloc_gen_array(PTR, CAPACITY) PTR = cff_new_arr(__typeof__(PTR[0]), CAPACITY)
+#define alloc_gen_array(PTR, CAPACITY) PTR = CFF_ARR_NEW(__typeof__(PTR[0]), CAPACITY, "ARRAY BLOCK")
 
 #define cff_sparse_dcltype(NAME, TYPE) \
     typedef struct                     \
@@ -32,10 +32,10 @@
     {                                                                                              \
         __typeof__(PTR) __m_ptr = (PTR);                                                           \
         uint32_t __m_cap = (uint32_t)CAPACITY;                                                     \
-        __typeof__(__m_ptr->dense) __m_tmp_dense = cff_resize_arr(__m_ptr->dense, __m_cap);        \
+        __typeof__(__m_ptr->dense) __m_tmp_dense = CFF_ARR_RESIZE(__m_ptr->dense, __m_cap);        \
         if (__m_tmp_dense != NULL)                                                                 \
         {                                                                                          \
-            __typeof__(__m_ptr->sparse) __m_tmp_sparse = cff_resize_arr(__m_ptr->sparse, __m_cap); \
+            __typeof__(__m_ptr->sparse) __m_tmp_sparse = CFF_ARR_RESIZE(__m_ptr->sparse, __m_cap); \
             if (__m_tmp_sparse != NULL)                                                            \
             {                                                                                      \
                 __m_ptr->dense = __m_tmp_dense;                                                    \

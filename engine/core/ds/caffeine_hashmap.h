@@ -7,7 +7,7 @@
 
 #define cff_release(A) cff_mem_release((void *)A)
 
-#define alloc_gen_array(PTR, CAPACITY) PTR = cff_new_arr(__typeof__(PTR[0]), CAPACITY)
+#define alloc_gen_array(PTR, CAPACITY) PTR = CFF_ARR_NEW(__typeof__(PTR[0]), CAPACITY, "ARRAY BLOCK")
 
 #define cff_hash_dcltype(NAME, KEY_TYPE, DATA_TYPE)                   \
     typedef struct                                                    \
@@ -259,9 +259,9 @@
     void NAME##_resize(NAME *m_ptr, uint32_t new_capacity)                                            \
     {                                                                                                 \
         printf("rez\n");                                                                              \
-        DATA_TYPE *n_data_buffer = cff_new_arr(DATA_TYPE, new_capacity);                              \
-        KEY_TYPE *n_key_buffer = cff_new_arr(KEY_TYPE, new_capacity);                                 \
-        uint8_t *n_used_buffer = cff_new_arr(uint8_t, new_capacity);                                  \
+        DATA_TYPE *n_data_buffer = CFF_ARR_NEW(DATA_TYPE, new_capacity, "ARRAY BLOCK");               \
+        KEY_TYPE *n_key_buffer = CFF_ARR_NEW(KEY_TYPE, new_capacity, "ARRAY BLOCK");                  \
+        uint8_t *n_used_buffer = CFF_ARR_NEW(uint8_t, new_capacity, "ARRAY BLOCK");                   \
         uint32_t n_max_collision = 0;                                                                 \
         cff_mem_zero(n_used_buffer, new_capacity * sizeof(uint8_t));                                  \
         for (uint32_t m_i = 0; m_i < m_ptr->count; m_i++)                                             \

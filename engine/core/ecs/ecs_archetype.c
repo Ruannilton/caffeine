@@ -159,7 +159,7 @@ void ecs_archetype_add_component(archetype_index *const index, archetype_id arch
 
     if (info->lenght == info->capacity)
     {
-        info->components = cff_resize_arr(info->components, info->capacity * 2);
+        info->components = CFF_ARR_RESIZE(info->components, info->capacity * 2);
         info->capacity *= 2;
     }
 

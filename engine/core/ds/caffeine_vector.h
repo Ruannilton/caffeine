@@ -5,7 +5,7 @@
 
 #define cff_release(A) cff_mem_release((void *)A)
 
-#define alloc_gen_array(PTR, CAPACITY) PTR = cff_new_arr(__typeof__(PTR[0]), CAPACITY)
+#define alloc_gen_array(PTR, CAPACITY) PTR = CFF_ARR_NEW(__typeof__(PTR[0]), CAPACITY, "ARRAY BLOCK")
 
 #define cff_arr_dcltype(NAME, TYPE) \
     typedef struct                  \
@@ -30,7 +30,7 @@
     {                                                                                          \
         __typeof__(ARR_PTR) __m_ptr_2 = (ARR_PTR);                                             \
         uint32_t __m_cap = (uint32_t)CAPACITY;                                                 \
-        __typeof__(__m_ptr_2->buffer) __m_tmp_bf = cff_resize_arr(__m_ptr_2->buffer, __m_cap); \
+        __typeof__(__m_ptr_2->buffer) __m_tmp_bf = CFF_ARR_RESIZE(__m_ptr_2->buffer, __m_cap); \
         if (__m_tmp_bf != NULL)                                                                \
         {                                                                                      \
             __m_ptr_2->buffer = __m_tmp_bf;                                                    \
@@ -119,7 +119,7 @@
                                                                                                                \
     void ARRAY_NAME##_resize(ARRAY_NAME *arr, uint32_t capacity)                                               \
     {                                                                                                          \
-        TYPE *tmp_buffer = cff_resize_arr(arr->buffer, capacity);                                              \
+        TYPE *tmp_buffer = CFF_ARR_RESIZE(arr->buffer, capacity);                                              \
         if (tmp_buffer != NULL)                                                                                \
         {                                                                                                      \
             arr->buffer = tmp_buffer;                                                                          \

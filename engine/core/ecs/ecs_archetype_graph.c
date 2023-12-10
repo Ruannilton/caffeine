@@ -157,7 +157,7 @@ uint32_t ecs_archetype_graph_find_with(archetype_graph *graph, uint32_t count, c
         to_look_index++;
     }
 
-    cff_arr_copy(result, out, result_count);
+    CFF_ARR_COPY(result, out, result_count);
     return result_count;
 }
 

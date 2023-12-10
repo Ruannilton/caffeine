@@ -48,7 +48,7 @@ component_id ecs_register_component(component_index *const index_mut_ref, const 
 
     if (index_mut_ref->count == index_mut_ref->capacity)
     {
-        index_mut_ref->data_owning = cff_resize_arr(index_mut_ref->data_owning, index_mut_ref->capacity * 2);
+        index_mut_ref->data_owning = CFF_ARR_RESIZE(index_mut_ref->data_owning, index_mut_ref->capacity * 2);
         index_mut_ref->capacity *= 2;
     }
 

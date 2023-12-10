@@ -157,18 +157,23 @@ void default_key_clkb(uint32_t key, uint32_t state)
   (void)key;
   (void)state;
 }
+
 void default_mouse_button_clkb(uint32_t button, uint32_t state)
 {
   (void)button;
   (void)state;
 }
+
 void default_mouse_move_clkb(uint32_t x, uint32_t y)
 {
   (void)x;
   (void)y;
 }
+
 void default_mouse_scroll_clkb(int32_t dir) { (void)dir; }
+
 void default_quit(void) {}
+
 void default_resize(uint32_t width, uint32_t lenght)
 {
   (void)width;

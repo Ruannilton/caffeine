@@ -8,7 +8,7 @@ ecs_archetype ecs_create_archetype(uint32_t len)
     ecs_archetype arch = {
         .capacity = len,
         .count = 0,
-        .components = cff_mem_alloc(len * sizeof(component_id)),
+        .components = (component_id *)cff_mem_alloc(len * sizeof(component_id)),
     };
     return arch;
 }
@@ -23,7 +23,7 @@ void ecs_archetype_add(ecs_archetype *arch, component_id id)
 
     if (arch->count == arch->capacity)
     {
-        arch->components = cff_resize_arr(arch->components, arch->capacity * 2);
+        arch->components = CFF_ARR_RESIZE(arch->components, arch->capacity * 2);
         arch->capacity *= 2;
     }
 
