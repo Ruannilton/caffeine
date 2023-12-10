@@ -24,7 +24,7 @@ static bool cmp_data_fn(dependency_list *value_a_ref, dependency_list *value_b_r
 
 component_dependency *ecs_component_dependency_init(uint32_t capacity)
 {
-    component_dependency *cp_owning = cff_mem_alloc(sizeof(component_dependency));
+    component_dependency *cp_owning = CFF_ALLOC(sizeof(component_dependency), "COMPONENT DEPENDENCY");
 
     if (cp_owning == NULL)
         return NULL;
@@ -46,7 +46,7 @@ void ecs_component_dependency_release(component_dependency *ptr)
     }
 
     component_dependency_release(ptr);
-    cff_mem_release(ptr);
+    CFF_RELEASE(ptr);
 }
 
 void ecs_component_dependency_add_component(component_dependency *ptr, component_id component)

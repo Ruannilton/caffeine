@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "../caffeine_memory.h"
 
-#define cff_release(A) cff_mem_release((void *)A)
+#define cff_release(A) CFF_RELEASE((void *)A)
 
 #define alloc_gen_array(PTR, CAPACITY) PTR = CFF_ARR_NEW(__typeof__(PTR[0]), CAPACITY, "ARRAY BLOCK")
 

@@ -31,7 +31,7 @@ static inline uint32_t min(uint32_t a, uint32_t b);
 
 archetype_index *ecs_new_archetype_index(uint32_t capacity)
 {
-    archetype_index *instance = (archetype_index *)cff_mem_alloc(sizeof(archetype_index));
+    archetype_index *instance = (archetype_index *)CFF_ALLOC(sizeof(archetype_index), "ARCHETYPE INDEX");
 
     if (instance == NULL)
         return instance;
@@ -39,35 +39,35 @@ archetype_index *ecs_new_archetype_index(uint32_t capacity)
     instance->capacity = capacity;
     instance->count = 0;
     instance->max_collision = 0;
-    instance->values = (archetype_info *)cff_mem_alloc(capacity * sizeof(archetype_info));
+    instance->values = (archetype_info *)CFF_ALLOC(capacity * sizeof(archetype_info), "ARCHETYPE INDEX VALUES");
 
     if (instance->values == NULL)
     {
-        cff_mem_release(instance);
+        CFF_RELEASE(instance);
         return NULL;
     }
 
-    instance->keys = (uint32_t *)cff_mem_alloc(capacity * sizeof(uint32_t));
+    instance->keys = (uint32_t *)CFF_ALLOC(capacity * sizeof(uint32_t), "ARCHETYPE INDEX KEYS");
     if (instance->keys == NULL)
     {
-        cff_mem_release(instance->values);
-        cff_mem_release(instance);
+        CFF_RELEASE(instance->values);
+        CFF_RELEASE(instance);
         return NULL;
     }
 
-    instance->reverse_keys = (uint32_t *)cff_mem_alloc(capacity * sizeof(uint32_t));
+    instance->reverse_keys = (uint32_t *)CFF_ALLOC(capacity * sizeof(uint32_t), "ARCHETYPE INDEX INVERSE KEYS");
     if (instance->reverse_keys == NULL)
     {
-        cff_mem_release(instance->keys);
-        cff_mem_release(instance->values);
-        cff_mem_release(instance);
+        CFF_RELEASE(instance->keys);
+        CFF_RELEASE(instance->values);
+        CFF_RELEASE(instance);
         return NULL;
     }
 
     uint32_t init_val = INVALID_INDEX;
-    cff_mem_zero(instance->values, capacity * sizeof(archetype_info));
-    cff_mem_set(&init_val, instance->keys, sizeof(uint32_t), capacity * sizeof(uint32_t));
-    cff_mem_set(&init_val, instance->reverse_keys, sizeof(uint32_t), capacity * sizeof(uint32_t));
+    CFF_ZERO(instance->values, capacity * sizeof(archetype_info));
+    CFF_SET(&init_val, instance->keys, sizeof(uint32_t), capacity * sizeof(uint32_t));
+    CFF_SET(&init_val, instance->reverse_keys, sizeof(uint32_t), capacity * sizeof(uint32_t));
 
     instance->graph = ecs_archetype_graph_new();
 
@@ -235,20 +235,20 @@ void ecs_release_archetype_index(const archetype_index *const index)
         if (index->keys[index->reverse_keys[i]] != INVALID_INDEX)
         {
             archetype_info *info = index->values + i;
-            cff_mem_release(info->components);
+            CFF_RELEASE(info->components);
         }
     }
 
-    cff_mem_release(index->values);
-    cff_mem_release(index->keys);
-    cff_mem_release(index->reverse_keys);
+    CFF_RELEASE(index->values);
+    CFF_RELEASE(index->keys);
+    CFF_RELEASE(index->reverse_keys);
 
     // uint32_t init_val = (uint32_t)-1;
-    // cff_mem_zero(index->values, sizeof(archetype_info), index->capacity * sizeof(archetype_info));
-    // cff_mem_set(&init_val, index->keys, sizeof(uint32_t), index->capacity * sizeof(uint32_t));
-    // cff_mem_set(&init_val, index->reverse_keys, sizeof(uint32_t), index->capacity * sizeof(uint32_t));
+    // CFF_ZERO(index->values, sizeof(archetype_info), index->capacity * sizeof(archetype_info));
+    // CFF_SET(&init_val, index->keys, sizeof(uint32_t), index->capacity * sizeof(uint32_t));
+    // CFF_SET(&init_val, index->reverse_keys, sizeof(uint32_t), index->capacity * sizeof(uint32_t));
 
-    cff_mem_release(index);
+    CFF_RELEASE(index);
 }
 
 uint32_t ecs_archetype_get_components(archetype_index *index, archetype_id id, const component_id **out)

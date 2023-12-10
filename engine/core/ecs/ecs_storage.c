@@ -16,13 +16,13 @@ ecs_storage ecs_storage_new(component_id *components, size_t *component_sizes, u
     storage.component_count = components_count;
 
     storage.entity_capacity = 4;
-    storage.entities = (entity_id *)cff_mem_alloc(sizeof(entity_id) * storage.entity_capacity);
-    storage.entity_data = (void **)cff_mem_alloc(sizeof(void *) * components_count);
+    storage.entities = (entity_id *)CFF_ALLOC(sizeof(entity_id) * storage.entity_capacity, "STORAGE");
+    storage.entity_data = (void **)CFF_ALLOC(sizeof(void *) * components_count, "STORAGE COMPONENTS");
 
     for (size_t i = 0; i < components_count; i++)
     {
         size_t component_size = component_sizes[i];
-        void *buffer = cff_mem_alloc((uint64_t)(component_size * storage.entity_capacity));
+        void *buffer = CFF_ALLOC((uint64_t)(component_size * storage.entity_capacity), "STORAGE COMPONENTS ARRAY");
         storage.entity_data[i] = buffer;
     }
 
@@ -38,13 +38,13 @@ void ecs_storage_release(const ecs_storage *const storage)
     for (size_t i = 0; i < storage->component_count; i++)
     {
         void *buffer = storage->entity_data[i];
-        cff_mem_release(buffer);
+        CFF_RELEASE(buffer);
     }
 
-    cff_mem_release(storage->entity_data);
-    cff_mem_release(storage->entities);
-    cff_mem_release(storage->component_sizes);
-    cff_mem_release(storage->components);
+    CFF_RELEASE(storage->entity_data);
+    CFF_RELEASE(storage->entities);
+    CFF_RELEASE(storage->component_sizes);
+    CFF_RELEASE(storage->components);
 }
 
 int ecs_storage_add_entity(ecs_storage *const storage, entity_id entity)
@@ -82,7 +82,7 @@ entity_id ecs_storage_remove_entity(ecs_storage *const storage, int row)
         size_t component_size = storage->component_sizes[i];
         void *from = (void *)((uintptr_t)storage->entity_data[i] + (uintptr_t)(component_size * last_entity));
         void *to = (void *)((uintptr_t)storage->entity_data[i] + (uintptr_t)(component_size * row));
-        cff_mem_copy(from, to, component_size);
+        CFF_COPY(from, to, component_size);
     }
 
     storage->entity_count--;
@@ -96,7 +96,7 @@ void ecs_storage_set_component(ecs_storage *const storage, int row, component_id
     {
         size_t component_size = storage->component_sizes[component_index];
         void *to = (void *)((uintptr_t)storage->entity_data[component_index] + (uintptr_t)(component_size * row));
-        cff_mem_copy(data, to, component_size);
+        CFF_COPY(data, to, component_size);
     }
 }
 
@@ -130,7 +130,7 @@ static void _storage_resize(ecs_storage *const storage, uint32_t capacity)
         size_t component_size = storage->component_sizes[i];
         void *ptr = storage->entity_data[i];
 
-        storage->entity_data[i] = cff_mem_realloc(ptr, component_size * capacity);
+        storage->entity_data[i] = CFF_REALLOC(ptr, component_size * capacity);
     }
 
     storage->entity_capacity = capacity;

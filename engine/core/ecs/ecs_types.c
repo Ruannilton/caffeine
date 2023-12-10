@@ -8,7 +8,7 @@ ecs_archetype ecs_create_archetype(uint32_t len)
     ecs_archetype arch = {
         .capacity = len,
         .count = 0,
-        .components = (component_id *)cff_mem_alloc(len * sizeof(component_id)),
+        .components = (component_id *)CFF_ALLOC(len * sizeof(component_id), "ARCHETYPE"),
     };
     return arch;
 }

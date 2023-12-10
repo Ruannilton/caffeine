@@ -20,20 +20,20 @@ struct component_index
 
 component_index *ecs_new_component_index(uint32_t capacity)
 {
-    component_index *instance_owning = (component_index *)cff_mem_alloc(sizeof(component_index));
+    component_index *instance_owning = (component_index *)CFF_ALLOC(sizeof(component_index), "COMPONENT INDEX");
 
     if (instance_owning == NULL)
         return instance_owning;
 
-    component_info *buffer_owning = (component_info *)cff_mem_alloc(capacity * sizeof(component_info));
+    component_info *buffer_owning = (component_info *)CFF_ALLOC(capacity * sizeof(component_info), "COMPONENT INDEX BUFFER");
 
     if (buffer_owning == NULL)
     {
-        cff_mem_release(instance_owning);
+        CFF_RELEASE(instance_owning);
         return NULL;
     }
 
-    cff_mem_zero(buffer_owning, capacity * sizeof(component_info));
+    CFF_ZERO(buffer_owning, capacity * sizeof(component_info));
 
     instance_owning->capacity = capacity;
     instance_owning->count = 0;
@@ -85,6 +85,6 @@ void ecs_remove_component(component_index *const index_mut_ref, component_id id)
 
 void ecs_release_component_index(const component_index *const index_owning)
 {
-    cff_mem_release(index_owning->data_owning);
-    cff_mem_release(index_owning);
+    CFF_RELEASE(index_owning->data_owning);
+    CFF_RELEASE(index_owning);
 }

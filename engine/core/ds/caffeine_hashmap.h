@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define cff_release(A) cff_mem_release((void *)A)
+#define cff_release(A) CFF_RELEASE((void *)A)
 
 #define alloc_gen_array(PTR, CAPACITY) PTR = CFF_ARR_NEW(__typeof__(PTR[0]), CAPACITY, "ARRAY BLOCK")
 
@@ -53,7 +53,7 @@
         alloc_gen_array(__m_ptr_3->data_buffer, __m_capacity_3);                \
         alloc_gen_array(__m_ptr_3->key_buffer, __m_capacity_3);                 \
         alloc_gen_array(__m_ptr_3->used_slot, __m_capacity_3);                  \
-        cff_mem_zero(__m_ptr_3->used_slot, __m_capacity_3 * sizeof(uint8_t));   \
+        CFF_ZERO(__m_ptr_3->used_slot, __m_capacity_3 * sizeof(uint8_t));       \
         __m_ptr_3->hash_key_fn = __m_hash_key_fn_3;                             \
         __m_ptr_3->cmp_key_fn = __m_cmp_key_fn_3;                               \
         __m_ptr_3->cmp_data_fn = __m_cmp_data_fn_3;                             \
@@ -80,7 +80,7 @@
             alloc_gen_array(__n_data_buffer, __n_capacity);                                                       \
             alloc_gen_array(__n_key_buffer, __n_capacity);                                                        \
             alloc_gen_array(__n_used_buffer, __n_capacity);                                                       \
-            cff_mem_zero(__n_used_buffer, __n_capacity * sizeof(uint8_t));                                        \
+            CFF_ZERO(__n_used_buffer, __n_capacity * sizeof(uint8_t));                                            \
             for (uint32_t __m_i = 0; __m_i < __m_ptr_3->count; __m_i++)                                           \
             {                                                                                                     \
                 __typeof__(__n_key_buffer[0]) __curr_key = __m_ptr_3->key_buffer[__m_i];                          \
@@ -234,7 +234,7 @@
         alloc_gen_array(m_ptr->data_buffer, capacity);                                                \
         alloc_gen_array(m_ptr->key_buffer, capacity);                                                 \
         alloc_gen_array(m_ptr->used_slot, capacity);                                                  \
-        cff_mem_zero(m_ptr->used_slot, capacity * sizeof(uint8_t));                                   \
+        CFF_ZERO(m_ptr->used_slot, capacity * sizeof(uint8_t));                                       \
     }                                                                                                 \
     uint32_t NAME##_resolve_collision(NAME *m_ptr, KEY_TYPE key, uint32_t hash_index, DATA_TYPE data) \
     {                                                                                                 \
@@ -263,7 +263,7 @@
         KEY_TYPE *n_key_buffer = CFF_ARR_NEW(KEY_TYPE, new_capacity, "ARRAY BLOCK");                  \
         uint8_t *n_used_buffer = CFF_ARR_NEW(uint8_t, new_capacity, "ARRAY BLOCK");                   \
         uint32_t n_max_collision = 0;                                                                 \
-        cff_mem_zero(n_used_buffer, new_capacity * sizeof(uint8_t));                                  \
+        CFF_ZERO(n_used_buffer, new_capacity * sizeof(uint8_t));                                      \
         for (uint32_t m_i = 0; m_i < m_ptr->count; m_i++)                                             \
         {                                                                                             \
             KEY_TYPE curr_key = m_ptr->key_buffer[m_i];                                               \

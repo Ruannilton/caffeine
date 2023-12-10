@@ -1,9 +1,10 @@
 #include "caffeine_memory.h"
 #include "../platform/caffeine_platform.h"
+#include "caffeine_logging.h"
 
 #ifdef CFF_DEBUG
 #include <stdio.h>
-static uint64_t _mem_allocked;
+static uint64_t _mem_allocked = 0;
 static uint64_t _count = 0;
 
 typedef struct
@@ -86,12 +87,11 @@ void *cff_mem_alloc_dbg(uint64_t size, const char *const block_name, const char 
   debug_result->size = size;
   debug_result->freed = 0;
 
+  _mem_allocked += size;
+
   void *result = _get_block(debug_result);
 
-  {
-    char msg[128];
-    sprintf_s(msg, 128, "%llu - [%p] Allocated: %llu | Total: %llu\n", _count, (void *)debug_result, size, _mem_allocked);
-  }
+  caff_log_trace("[%s:%llu] Alloc %d.%s - %llu bytes\n", file, line, (int)debug_result->id, block_name, size);
 
   return result;
 }
@@ -123,13 +123,9 @@ void cff_mem_release_dbg(const void *const ptr_owning, const char *const file, u
   header->freed = 1;
   _mem_allocked -= header->size;
 
-  cff_mem_release(header);
+  caff_log_trace("[%s:%llu] Free %d.%s - %u bytes\n", file, line, (int)header->id, header->block_name, header->size);
 
-  {
-    char msg[256] = {0};
-    sprintf_s(msg, 256, "%u - [%p | %p] Freeded: %u | Tota: %llu\n", header->id, (void *)header, ptr_owning, header->size, _mem_allocked);
-    cff_print_console(LOG_LEVEL_INFO, msg);
-  }
+  cff_mem_release(header);
 }
 
 void cff_mem_copy_dbg(const void *const from_ref, void *const dest_mut_ref, uint64_t size, const char *const file, uint64_t line)

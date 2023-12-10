@@ -18,16 +18,16 @@ entity_index *ecs_entity_index_new(uint32_t capacity)
     if (capacity < 4)
         capacity = 4;
 
-    entity_index *index = (entity_index *)cff_mem_alloc(sizeof(entity_index));
+    entity_index *index = (entity_index *)CFF_ALLOC(sizeof(entity_index), "ENTITY INDEX");
 
     if (index == NULL)
         return NULL;
 
-    index->data = (entity_record *)cff_mem_alloc(sizeof(entity_record) * capacity);
+    index->data = (entity_record *)CFF_ALLOC(sizeof(entity_record) * capacity, "ENTITY INDEX DATA");
     index->capacity = capacity;
     index->count = 0;
 
-    index->trash = (entity_id *)cff_mem_alloc(sizeof(entity_id) * (capacity / 2));
+    index->trash = (entity_id *)CFF_ALLOC(sizeof(entity_id) * (capacity / 2), "ENTITY INDEX TRASH");
     index->trash_count = 0;
     index->trash_capacity = capacity / 2;
 
@@ -39,9 +39,9 @@ void ecs_entity_index_release(entity_index *index)
     if (index == NULL)
         return;
 
-    cff_mem_release(index->trash);
-    cff_mem_release(index->data);
-    cff_mem_release(index);
+    CFF_RELEASE(index->trash);
+    CFF_RELEASE(index->data);
+    CFF_RELEASE(index);
 }
 
 entity_id ecs_entity_index_new_entity(entity_index *index)

@@ -31,7 +31,7 @@ static void add_edge(archetype_graph *graph, uint32_t from_node, component_id co
 static uint32_t get_node_with(archetype_graph *graph, uint32_t count, const component_id components[]);
 static int get_edge_index(archetype_graph *graph, uint32_t node_index, component_id component);
 static void build_component_list(component_id result[], const component_id from[], uint64_t to_add, uint32_t from_len);
-static void debug_node(archetype_graph *graph, uint32_t node_index);
+// static void debug_node(archetype_graph *graph, uint32_t node_index);
 static uint32_t on_add_branch(archetype_graph *graph, uint32_t node_index, uint32_t edge_index);
 static bool add_component_to_node(archetype_graph *graph, uint32_t node_index, component_id component, uint32_t on_add, uint32_t on_rem);
 static uint32_t init_new_node(archetype_graph *graph, archetype_id arch_id, uint32_t from_node);
@@ -41,13 +41,13 @@ static void set_node_arch_id(archetype_graph *graph, uint32_t index, archetype_i
 archetype_graph *ecs_archetype_graph_new()
 {
     uint32_t capacity = 8;
-    archetype_graph *graph = (archetype_graph *)cff_mem_alloc(sizeof(archetype_graph));
+    archetype_graph *graph = (archetype_graph *)CFF_ALLOC(sizeof(archetype_graph), "ARCHETYPE GRAPH");
 
-    graph->nodes = (graph_node *)cff_mem_alloc(sizeof(graph_node) * capacity);
+    graph->nodes = (graph_node *)CFF_ALLOC(sizeof(graph_node) * capacity, "GRAPH NODES");
     graph->capacity = capacity;
     graph->count = 0;
 
-    cff_mem_zero(graph->nodes, sizeof(graph_node) * capacity);
+    CFF_ZERO(graph->nodes, sizeof(graph_node) * capacity);
 
     init_new_node(graph, INVALID_ID, (uint32_t)-1);
 
@@ -56,8 +56,13 @@ archetype_graph *ecs_archetype_graph_new()
 
 void ecs_archetype_graph_release(archetype_graph *graph)
 {
-    cff_mem_release(graph->nodes);
-    cff_mem_release(graph);
+    for (size_t i = 0; i < graph->count; i++)
+    {
+        CFF_RELEASE(graph->nodes[i].components);
+        CFF_RELEASE(graph->nodes[i].edges);
+    }
+    CFF_RELEASE(graph->nodes);
+    CFF_RELEASE(graph);
 }
 
 void ecs_archetype_graph_add(archetype_graph *graph, archetype_id id, uint32_t components_count, const component_id components[])
@@ -69,15 +74,15 @@ void ecs_archetype_graph_add(archetype_graph *graph, archetype_id id, uint32_t c
     {
         component_id component = components[i];
 
-        caff_raw_log("[GRAPH] On Node:\n");
-        debug_node(graph, current_node);
-        caff_raw_log("[GRAPH] On Component: {%d}\n", component);
+        // caff_raw_log("[GRAPH] On Node:\n");
+        // debug_node(graph, current_node);
+        // caff_raw_log("[GRAPH] On Component: {%d}\n", component);
 
         int edge_pos = get_edge_index(graph, current_node, component);
 
         if (edge_pos == -1)
         {
-            caff_raw_log("\t[GRAPH] Edge not Found\n");
+            // caff_raw_log("\t[GRAPH] Edge not Found\n");
 
             component_id *current_components = NULL;
             uint32_t current_components_count = get_node_components(graph, current_node, &current_components);
@@ -89,18 +94,18 @@ void ecs_archetype_graph_add(archetype_graph *graph, archetype_id id, uint32_t c
             if (to_node == -1)
             {
                 to_node = init_new_node(graph, INVALID_ID, current_node);
-                caff_raw_log("\t\t[GRAPH] Created Node\n\t");
-                debug_node(graph, to_node);
+                // caff_raw_log("\t\t[GRAPH] Created Node\n\t");
+                // debug_node(graph, to_node);
             }
             else
             {
-                caff_raw_log("\t\t[GRAPH] Found Node\n\t");
-                debug_node(graph, to_node);
+                // caff_raw_log("\t\t[GRAPH] Found Node\n\t");
+                // debug_node(graph, to_node);
             }
 
             add_edge(graph, current_node, component, to_node);
-            caff_raw_log("\t[GRAPH] Added Edge to Node\n\t");
-            debug_node(graph, to_node);
+            // caff_raw_log("\t[GRAPH] Added Edge to Node\n\t");
+            // debug_node(graph, to_node);
             current_node = to_node;
         }
         else
@@ -274,34 +279,34 @@ static void build_component_list(component_id result[], const component_id from[
     }
 }
 
-static void debug_node(archetype_graph *graph, uint32_t node_index)
-{
-    if (node_index > graph->count)
-        return;
-    graph_node *node = graph->nodes + node_index;
+// static void debug_node(archetype_graph *graph, uint32_t node_index)
+// {
+//     if (node_index > graph->count)
+//         return;
+//     graph_node *node = graph->nodes + node_index;
 
-    caff_raw_log("{ \n\tid: %d\n\tarch_id: %d\n\tcomponents: [ ", node->id, node->arch_id);
-    for (size_t i = 0; i < node->edge_count; i++)
-    {
-        caff_raw_log("%d, ", node->components[i]);
-    }
-    caff_raw_log("]\n\tedges:[\n");
-    for (size_t i = 0; i < node->edge_count; i++)
-    {
-        uint32_t on_add_index = node->edges[i].on_add;
+//     // caff_raw_log("{ \n\tid: %d\n\tarch_id: %d\n\tcomponents: [ ", node->id, node->arch_id);
+//     for (size_t i = 0; i < node->edge_count; i++)
+//     {
+//         // caff_raw_log("%d, ", node->components[i]);
+//     }
+//     // caff_raw_log("]\n\tedges:[\n");
+//     for (size_t i = 0; i < node->edge_count; i++)
+//     {
+//         uint32_t on_add_index = node->edges[i].on_add;
 
-        if (on_add_index == (uint32_t)-1)
-        {
-            caff_raw_log("\t\t{ %d {%d} (%d)-> _ {_} }\n", node->id, node->arch_id, node->components[i]);
-        }
-        else if (on_add_index < graph->count)
-        {
-            graph_node *on_add = graph->nodes + on_add_index;
-            caff_raw_log("\t\t{ %d {%d} (%d)-> %d {%d} }\n", node->id, node->arch_id, node->components[i], on_add->id, on_add->arch_id);
-        }
-    }
-    caff_raw_log("\t]\t\n}\n");
-}
+//         if (on_add_index == (uint32_t)-1)
+//         {
+//             // caff_raw_log("\t\t{ %d {%d} (%d)-> _ {_} }\n", node->id, node->arch_id, node->components[i]);
+//         }
+//         else if (on_add_index < graph->count)
+//         {
+//             graph_node *on_add = graph->nodes + on_add_index;
+//             // caff_raw_log("\t\t{ %d {%d} (%d)-> %d {%d} }\n", node->id, node->arch_id, node->components[i], on_add->id, on_add->arch_id);
+//         }
+//     }
+//     // caff_raw_log("\t]\t\n}\n");
+// }
 
 static bool add_component_to_node(archetype_graph *graph, uint32_t node_index, component_id component, uint32_t on_add, uint32_t on_rem)
 {
@@ -310,8 +315,8 @@ static bool add_component_to_node(archetype_graph *graph, uint32_t node_index, c
     if (node_ptr->edge_count == node_ptr->edge_capacity)
     { // TODO: handle allocation
         uint32_t new_capacity = node_ptr->edge_capacity * 2;
-        node_ptr->edges = (graph_edge *)cff_mem_realloc(node_ptr->edges, new_capacity);
-        node_ptr->components = (component_id *)cff_mem_realloc(node_ptr->components, new_capacity);
+        node_ptr->edges = (graph_edge *)CFF_REALLOC(node_ptr->edges, new_capacity);
+        node_ptr->components = (component_id *)CFF_REALLOC(node_ptr->components, new_capacity);
         node_ptr->edge_capacity = new_capacity;
     }
 
@@ -362,7 +367,7 @@ static uint32_t init_new_node(archetype_graph *graph, archetype_id arch_id, uint
     if (graph->count == graph->capacity)
     {
         uint32_t new_capacity = graph->capacity * 2;
-        void *new_ptr = cff_mem_realloc(graph->nodes, new_capacity);
+        void *new_ptr = CFF_REALLOC(graph->nodes, new_capacity);
         if (new_ptr != NULL)
         {
             graph->nodes = (graph_node *)new_ptr;
@@ -382,12 +387,12 @@ static uint32_t init_new_node(archetype_graph *graph, archetype_id arch_id, uint
     node_ptr->edge_capacity = 4;
     node_ptr->edge_count = 0;
 
-    node_ptr->components = (component_id *)cff_mem_alloc(sizeof(component_id) * node_ptr->edge_capacity);
-    node_ptr->edges = (graph_edge *)cff_mem_alloc(sizeof(graph_edge) * node_ptr->edge_capacity);
+    node_ptr->components = (component_id *)CFF_ALLOC(sizeof(component_id) * node_ptr->edge_capacity, "NODE COMPONENTS");
+    node_ptr->edges = (graph_edge *)CFF_ALLOC(sizeof(graph_edge) * node_ptr->edge_capacity, "NODE EDGES");
     graph->count++;
 
     component_id def_value = INVALID_ID;
-    cff_mem_set(&def_value, node_ptr->components, sizeof(component_id), sizeof(component_id) * node_ptr->edge_capacity);
+    CFF_SET(&def_value, node_ptr->components, sizeof(component_id), sizeof(component_id) * node_ptr->edge_capacity);
 
     for (size_t i = 0; i < node_ptr->edge_capacity; i++)
     {

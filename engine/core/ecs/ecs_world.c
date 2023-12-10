@@ -21,7 +21,7 @@ static bool is_archetype_valid(const ecs_world *const world, archetype_id id, ec
 
 ecs_world *ecs_world_new()
 {
-    ecs_world *world_owning = (ecs_world *)cff_mem_alloc(sizeof(ecs_world));
+    ecs_world *world_owning = (ecs_world *)CFF_ALLOC(sizeof(ecs_world), "WORLD");
 
     if (world_owning == NULL)
         return NULL;
@@ -82,7 +82,7 @@ void ecs_world_release(const ecs_world *const world_owning)
     ecs_component_dependency_release(world_owning->dependencies_owning);
     ecs_release_archetype_index(world_owning->archetypes_owning);
     ecs_release_component_index(world_owning->components_owning);
-    cff_mem_release(world_owning);
+    CFF_RELEASE(world_owning);
 }
 
 component_id ecs_world_add_component(const ecs_world *const world_ref, const char *name, size_t size, size_t align)
@@ -100,8 +100,8 @@ archetype_id ecs_world_add_archetype(const ecs_world *const world_ref, ecs_arche
 {
     archetype_id id = ecs_register_archetype(world_ref->archetypes_owning, archetype);
 
-    size_t *component_sizes = (size_t *)cff_mem_alloc(archetype.count * sizeof(size_t));
-    component_id *components = (component_id *)cff_mem_alloc(archetype.count * sizeof(component_id));
+    size_t *component_sizes = (size_t *)CFF_ALLOC(archetype.count * sizeof(size_t), "STORAGE COMPONENTS SIZES");
+    component_id *components = (component_id *)CFF_ALLOC(archetype.count * sizeof(component_id), "STORAGE COMPONENTS");
 
     for (size_t i = 0; i < archetype.count; i++)
     {

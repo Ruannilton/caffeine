@@ -16,15 +16,15 @@ void ecs_storage_release(const ecs_storage *const storage);
 
 storage_index *ecs_storage_index_new(uint32_t capacity)
 {
-    storage_index *index = (storage_index *)cff_mem_alloc(sizeof(storage_index));
+    storage_index *index = (storage_index *)CFF_ALLOC(sizeof(storage_index), "STORAGE INDEX");
 
-    index->storages = (ecs_storage *)cff_mem_alloc(sizeof(ecs_storage) * capacity);
-    index->used = (uint8_t *)cff_mem_alloc(sizeof(uint8_t) * capacity);
+    index->storages = (ecs_storage *)CFF_ALLOC(sizeof(ecs_storage) * capacity, "STORAGE INDEX BUFFER");
+    index->used = (uint8_t *)CFF_ALLOC(sizeof(uint8_t) * capacity, "STORAGE INDEX USED BUFFER");
     index->capacity = capacity;
     index->count = 0;
 
-    cff_mem_zero(index->storages, sizeof(ecs_storage) * capacity);
-    cff_mem_zero(index->used, sizeof(uint8_t) * capacity);
+    CFF_ZERO(index->storages, sizeof(ecs_storage) * capacity);
+    CFF_ZERO(index->used, sizeof(uint8_t) * capacity);
 
     return index;
 }
@@ -40,9 +40,9 @@ void ecs_storage_index_release(const storage_index *const index_owning)
         }
     }
 
-    cff_mem_release(index_owning->storages);
-    cff_mem_release(index_owning->used);
-    cff_mem_release(index_owning);
+    CFF_RELEASE(index_owning->storages);
+    CFF_RELEASE(index_owning->used);
+    CFF_RELEASE(index_owning);
 }
 
 void ecs_storage_index_new_storage(storage_index *const index, archetype_id arch_id, component_id *components, size_t *sizes, uint32_t lenght)
