@@ -42,7 +42,7 @@ component_index *ecs_new_component_index(uint32_t capacity)
     return instance_owning;
 }
 
-component_id ecs_register_component(component_index *const index_mut_ref, const char *name, size_t size, size_t align)
+component_id ecs_register_component(component_index *const index_mut_ref, const char *const name_ref, size_t size, size_t align)
 {
     component_id id = index_mut_ref->count;
 
@@ -54,7 +54,7 @@ component_id ecs_register_component(component_index *const index_mut_ref, const 
 
     component_info info = {
         .id = id,
-        .name = name,
+        .name = name_ref,
         .size = size,
         .align = align,
     };

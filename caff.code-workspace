@@ -42,7 +42,8 @@
 			"ecs_storage_index.h": "c",
 			"ecs_entity_index.h": "c",
 			"ecs_storage.h": "c",
-			"ecs_storage_type.h": "c"
+			"ecs_storage_type.h": "c",
+			"caffeine_flags.h": "c"
 		}
 	}
 }

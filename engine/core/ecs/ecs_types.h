@@ -21,11 +21,11 @@ typedef struct
 
 ecs_archetype ecs_create_archetype(uint32_t len);
 
-void ecs_archetype_add(ecs_archetype *arch, component_id id);
+void ecs_archetype_add(ecs_archetype *const arch_mut_ref, component_id id);
 
 typedef struct ecs_query ecs_query;
 
-ecs_query *ecs_query_new(int count, component_id *components);
-component_id *ecs_query_get_components(ecs_query *query);
-uint32_t ecs_query_get_count(ecs_query *query);
-void ecs_query_release(ecs_query *query);
+ecs_query *ecs_query_new(int count, const component_id *const components_ref);
+const component_id *ecs_query_get_components(const ecs_query *const query_ref);
+uint32_t ecs_query_get_count(const ecs_query *const query_ref);
+void ecs_query_release(const ecs_query *const query_owning);

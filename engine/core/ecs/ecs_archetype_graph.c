@@ -2,6 +2,8 @@
 #include "../caffeine_memory.h"
 #include "../caffeine_logging.h"
 
+#define INVALID_ID ((uint32_t)-1)
+
 typedef struct graph_node graph_node;
 
 typedef struct
@@ -27,16 +29,16 @@ struct archetype_graph
     graph_node *nodes;
 };
 
-static void add_edge(archetype_graph *graph, uint32_t from_node, component_id component, uint32_t to_node);
-static uint32_t get_node_with(archetype_graph *graph, uint32_t count, const component_id components[]);
-static int get_edge_index(archetype_graph *graph, uint32_t node_index, component_id component);
+static void add_edge(const archetype_graph *const graph_ref, uint32_t from_node, component_id component, uint32_t to_node);
+static uint32_t get_node_with(const archetype_graph *const graph_ref, uint32_t count, const component_id components[]);
+static int get_edge_index(const archetype_graph *const graph_ref, uint32_t node_index, component_id component);
 static void build_component_list(component_id result[], const component_id from[], uint64_t to_add, uint32_t from_len);
 // static void debug_node(archetype_graph *graph, uint32_t node_index);
-static uint32_t on_add_branch(archetype_graph *graph, uint32_t node_index, uint32_t edge_index);
-static bool add_component_to_node(archetype_graph *graph, uint32_t node_index, component_id component, uint32_t on_add, uint32_t on_rem);
+static uint32_t on_add_branch(const archetype_graph *const graph_ref, uint32_t node_index, uint32_t edge_index);
+static bool add_component_to_node(const archetype_graph *const graph_ref, uint32_t node_index, component_id component, uint32_t on_add, uint32_t on_rem);
 static uint32_t init_new_node(archetype_graph *graph, archetype_id arch_id, uint32_t from_node);
-static uint32_t get_node_components(archetype_graph *graph, uint32_t index, component_id **out_ref);
-static void set_node_arch_id(archetype_graph *graph, uint32_t index, archetype_id arch_id);
+static uint32_t get_node_components(const archetype_graph *const graph_ref, uint32_t index, component_id const **out_mut_ref);
+static void set_node_arch_id(const archetype_graph *const graph_ref, uint32_t index, archetype_id arch_id);
 
 archetype_graph *ecs_archetype_graph_new()
 {
@@ -49,51 +51,51 @@ archetype_graph *ecs_archetype_graph_new()
 
     CFF_ZERO(graph->nodes, sizeof(graph_node) * capacity);
 
-    init_new_node(graph, INVALID_ID, (uint32_t)-1);
+    init_new_node(graph, INVALID_ID, INVALID_ID);
 
     return graph;
 }
 
-void ecs_archetype_graph_release(archetype_graph *graph)
+void ecs_archetype_graph_release(const archetype_graph *const graph_owning)
 {
-    for (size_t i = 0; i < graph->count; i++)
+    for (size_t i = 0; i < graph_owning->count; i++)
     {
-        CFF_RELEASE(graph->nodes[i].components);
-        CFF_RELEASE(graph->nodes[i].edges);
+        CFF_RELEASE(graph_owning->nodes[i].components);
+        CFF_RELEASE(graph_owning->nodes[i].edges);
     }
-    CFF_RELEASE(graph->nodes);
-    CFF_RELEASE(graph);
+    CFF_RELEASE(graph_owning->nodes);
+    CFF_RELEASE(graph_owning);
 }
 
-void ecs_archetype_graph_add(archetype_graph *graph, archetype_id id, uint32_t components_count, const component_id components[])
+void ecs_archetype_graph_add(archetype_graph *const graph_mut_ref, archetype_id id, uint32_t components_count, const component_id *const components_ref)
 {
     uint32_t current_node = 0;
     component_id tmp_comps[components_count + 1];
 
     for (size_t i = 0; i < components_count; i++)
     {
-        component_id component = components[i];
+        component_id component = components_ref[i];
 
         // caff_raw_log("[GRAPH] On Node:\n");
         // debug_node(graph, current_node);
         // caff_raw_log("[GRAPH] On Component: {%d}\n", component);
 
-        int edge_pos = get_edge_index(graph, current_node, component);
+        int edge_pos = get_edge_index(graph_mut_ref, current_node, component);
 
-        if (edge_pos == -1)
+        if (edge_pos == INVALID_ID)
         {
             // caff_raw_log("\t[GRAPH] Edge not Found\n");
 
-            component_id *current_components = NULL;
-            uint32_t current_components_count = get_node_components(graph, current_node, &current_components);
+            const component_id *current_components = NULL;
+            uint32_t current_components_count = get_node_components(graph_mut_ref, current_node, &current_components);
 
             build_component_list(tmp_comps, current_components, component, current_components_count);
 
-            uint32_t to_node = get_node_with(graph, current_components_count + 1, tmp_comps);
+            uint32_t to_node = get_node_with(graph_mut_ref, current_components_count + 1, tmp_comps);
 
-            if (to_node == -1)
+            if (to_node == INVALID_ID)
             {
-                to_node = init_new_node(graph, INVALID_ID, current_node);
+                to_node = init_new_node(graph_mut_ref, INVALID_ID, current_node);
                 // caff_raw_log("\t\t[GRAPH] Created Node\n\t");
                 // debug_node(graph, to_node);
             }
@@ -103,33 +105,33 @@ void ecs_archetype_graph_add(archetype_graph *graph, archetype_id id, uint32_t c
                 // debug_node(graph, to_node);
             }
 
-            add_edge(graph, current_node, component, to_node);
+            add_edge(graph_mut_ref, current_node, component, to_node);
             // caff_raw_log("\t[GRAPH] Added Edge to Node\n\t");
             // debug_node(graph, to_node);
             current_node = to_node;
         }
         else
         {
-            current_node = on_add_branch(graph, current_node, edge_pos);
+            current_node = on_add_branch(graph_mut_ref, current_node, edge_pos);
         }
     }
-    set_node_arch_id(graph, current_node, id);
+    set_node_arch_id(graph_mut_ref, current_node, id);
 }
 
-uint32_t ecs_archetype_graph_find_with(archetype_graph *graph, uint32_t count, const component_id components[], archetype_id *out)
+uint32_t ecs_archetype_graph_find_with(const archetype_graph *const graph_ref, uint32_t count, const component_id components[], archetype_id **const out_mut_ref)
 {
 
-    archetype_id result[graph->count];
+    archetype_id result[graph_ref->count];
     uint32_t result_count = 0;
 
-    bool looked[graph->count];
-    for (size_t i = 0; i < graph->count; i++)
+    bool looked[graph_ref->count];
+    for (size_t i = 0; i < graph_ref->count; i++)
     {
         looked[i] = false;
     }
 
-    uint32_t to_look[graph->count];
-    to_look[0] = get_node_with(graph, count, components);
+    uint32_t to_look[graph_ref->count];
+    to_look[0] = get_node_with(graph_ref, count, components);
     uint32_t to_look_count = 1;
     uint32_t to_look_index = 0;
 
@@ -137,7 +139,7 @@ uint32_t ecs_archetype_graph_find_with(archetype_graph *graph, uint32_t count, c
     {
         uint32_t current_index = to_look[to_look_index];
 
-        graph_node *current = graph->nodes + current_index;
+        graph_node *current = graph_ref->nodes + current_index;
 
         if (looked[current->arch_id])
         {
@@ -148,7 +150,7 @@ uint32_t ecs_archetype_graph_find_with(archetype_graph *graph, uint32_t count, c
         for (size_t i = 0; i < current->edge_count; i++)
         {
             uint32_t to_add = current->edges[i].on_add;
-            if (!looked[(graph->nodes + to_add)->arch_id])
+            if (!looked[(graph_ref->nodes + to_add)->arch_id])
             {
                 to_look[to_look_count] = to_add;
                 to_look_count++;
@@ -162,70 +164,70 @@ uint32_t ecs_archetype_graph_find_with(archetype_graph *graph, uint32_t count, c
         to_look_index++;
     }
 
-    CFF_ARR_COPY(result, out, result_count);
+    CFF_ARR_COPY(result, *out_mut_ref, result_count);
     return result_count;
 }
 
-static void set_node_arch_id(archetype_graph *graph, uint32_t index, archetype_id arch_id)
+static void set_node_arch_id(const archetype_graph *const graph_ref, uint32_t index, archetype_id arch_id)
 {
-    if (index > graph->count)
+    if (index > graph_ref->count)
         return;
 
-    graph_node *node = graph->nodes + index;
+    graph_node *node = graph_ref->nodes + index;
     node->arch_id = arch_id;
 }
 
-static uint32_t on_add_branch(archetype_graph *graph, uint32_t node_index, uint32_t edge_index)
+static uint32_t on_add_branch(const archetype_graph *const graph_ref, uint32_t node_index, uint32_t edge_index)
 {
-    if (edge_index == -1)
-        return -1;
-    graph_node *node = graph->nodes + node_index;
+    if (edge_index == INVALID_ID)
+        return INVALID_ID;
+    graph_node *node = graph_ref->nodes + node_index;
     return node->edges[edge_index].on_add;
 }
 
 /*
  busca um nó que contenha todos os componentes do array de componentes informado, caso não encontre retorna nulo
 */
-static uint32_t get_node_with(archetype_graph *graph, uint32_t components_count, const component_id components[])
+static uint32_t get_node_with(const archetype_graph *const graph_ref, uint32_t components_count, const component_id components[])
 {
     uint32_t current_node = 0;
     for (size_t i = 0; i < components_count; i++)
     {
         component_id component = components[i];
-        int edge_pos = get_edge_index(graph, current_node, component);
+        int edge_pos = get_edge_index(graph_ref, current_node, component);
 
-        if (edge_pos == -1)
-            return (uint32_t)-1;
+        if (edge_pos == INVALID_ID)
+            return INVALID_ID;
 
-        current_node = on_add_branch(graph, current_node, edge_pos);
+        current_node = on_add_branch(graph_ref, current_node, edge_pos);
     }
 
     return current_node;
 }
 
-static void add_edge(archetype_graph *graph, uint32_t from_node, component_id component, uint32_t to_node)
+static void add_edge(const archetype_graph *const graph_ref, uint32_t from_node, component_id component, uint32_t to_node)
 {
-    add_component_to_node(graph, from_node, component, to_node, (uint32_t)-1);
-    add_component_to_node(graph, to_node, component, to_node, from_node);
+    add_component_to_node(graph_ref, from_node, component, to_node, INVALID_ID);
+    add_component_to_node(graph_ref, to_node, component, to_node, from_node);
 }
 
 /*busca o índice da aresta para o componente indicado, caso o nó não tenha uma aresta para o componente retorna -1*/
-static int get_edge_index(archetype_graph *graph, uint32_t node_index, component_id component)
+static int get_edge_index(const archetype_graph *const graph_ref, uint32_t node_index, component_id component)
 {
-    if (node_index > graph->count)
-        return -1;
+    if (node_index > graph_ref->count)
+        return INVALID_ID;
 
-    graph_node *node = graph->nodes + node_index;
+    graph_node *node = graph_ref->nodes + node_index;
 
     if (node->edge_count == 0 || node->edges == NULL)
-        return -1;
+        return INVALID_ID;
 
     for (size_t i = 0; i < node->edge_count; i++)
     {
         if (node->components[i] == component)
             return i;
     }
-    return -1;
+    return INVALID_ID;
 }
 
 /*adiciona um componente na lista de commponentes de maneira ordenada*/
@@ -295,7 +297,7 @@ static void build_component_list(component_id result[], const component_id from[
 //     {
 //         uint32_t on_add_index = node->edges[i].on_add;
 
-//         if (on_add_index == (uint32_t)-1)
+//         if (on_add_index == (uint32_t)INVALID_ID)
 //         {
 //             // caff_raw_log("\t\t{ %d {%d} (%d)-> _ {_} }\n", node->id, node->arch_id, node->components[i]);
 //         }
@@ -308,9 +310,9 @@ static void build_component_list(component_id result[], const component_id from[
 //     // caff_raw_log("\t]\t\n}\n");
 // }
 
-static bool add_component_to_node(archetype_graph *graph, uint32_t node_index, component_id component, uint32_t on_add, uint32_t on_rem)
+static bool add_component_to_node(const archetype_graph *const graph_ref, uint32_t node_index, component_id component, uint32_t on_add, uint32_t on_rem)
 {
-    graph_node *node_ptr = graph->nodes + node_index;
+    graph_node *node_ptr = graph_ref->nodes + node_index;
 
     if (node_ptr->edge_count == node_ptr->edge_capacity)
     { // TODO: handle allocation
@@ -320,7 +322,7 @@ static bool add_component_to_node(archetype_graph *graph, uint32_t node_index, c
         node_ptr->edge_capacity = new_capacity;
     }
 
-    uint32_t component_index = -1;
+    uint32_t component_index = INVALID_ID;
 
     if (node_ptr->edge_count == 0)
     {
@@ -362,25 +364,25 @@ static bool add_component_to_node(archetype_graph *graph, uint32_t node_index, c
     return true;
 }
 
-static uint32_t init_new_node(archetype_graph *graph, archetype_id arch_id, uint32_t from_node)
+static uint32_t init_new_node(archetype_graph *const graph_mut_ref, archetype_id arch_id, uint32_t from_node)
 {
-    if (graph->count == graph->capacity)
+    if (graph_mut_ref->count == graph_mut_ref->capacity)
     {
-        uint32_t new_capacity = graph->capacity * 2;
-        void *new_ptr = CFF_REALLOC(graph->nodes, new_capacity);
+        uint32_t new_capacity = graph_mut_ref->capacity * 2;
+        void *new_ptr = CFF_REALLOC(graph_mut_ref->nodes, new_capacity);
         if (new_ptr != NULL)
         {
-            graph->nodes = (graph_node *)new_ptr;
-            graph->capacity = new_capacity;
+            graph_mut_ref->nodes = (graph_node *)new_ptr;
+            graph_mut_ref->capacity = new_capacity;
         }
         else
         {
-            return (uint32_t)(-1);
+            return INVALID_ID;
         }
     }
 
-    uint32_t node_index = graph->count;
-    graph_node *node_ptr = graph->nodes + node_index;
+    uint32_t node_index = graph_mut_ref->count;
+    graph_node *node_ptr = graph_mut_ref->nodes + node_index;
 
     node_ptr->id = node_index;
     node_ptr->arch_id = arch_id;
@@ -389,50 +391,50 @@ static uint32_t init_new_node(archetype_graph *graph, archetype_id arch_id, uint
 
     node_ptr->components = (component_id *)CFF_ALLOC(sizeof(component_id) * node_ptr->edge_capacity, "NODE COMPONENTS");
     node_ptr->edges = (graph_edge *)CFF_ALLOC(sizeof(graph_edge) * node_ptr->edge_capacity, "NODE EDGES");
-    graph->count++;
+    graph_mut_ref->count++;
 
     component_id def_value = INVALID_ID;
     CFF_SET(&def_value, node_ptr->components, sizeof(component_id), sizeof(component_id) * node_ptr->edge_capacity);
 
     for (size_t i = 0; i < node_ptr->edge_capacity; i++)
     {
-        node_ptr->edges[i].on_add = (uint32_t)-1;
-        node_ptr->edges[i].on_remove = (uint32_t)-1;
+        node_ptr->edges[i].on_add = INVALID_ID;
+        node_ptr->edges[i].on_remove = INVALID_ID;
     }
 
-    if (from_node == (uint32_t)-1)
+    if (from_node == INVALID_ID)
     {
         return node_index;
     }
 
-    graph_node *from_node_ptr = graph->nodes + from_node;
+    graph_node *from_node_ptr = graph_mut_ref->nodes + from_node;
 
     for (size_t i = 0; i < from_node_ptr->edge_count; i++)
     {
         component_id comp = from_node_ptr->components[i];
-        add_component_to_node(graph, node_index, comp, node_index, from_node);
-        add_component_to_node(graph, from_node, comp, node_index, from_node);
+        add_component_to_node(graph_mut_ref, node_index, comp, node_index, from_node);
+        add_component_to_node(graph_mut_ref, from_node, comp, node_index, from_node);
     }
 
     return node_index;
 }
 
-static uint32_t get_node_components(archetype_graph *graph, uint32_t index, component_id **out_ref)
+static uint32_t get_node_components(const archetype_graph *const graph_ref, uint32_t index, component_id const **out_mut_ref)
 {
-    if (index > graph->count)
+    if (index > graph_ref->count)
         return 0;
 
-    if (out_ref == NULL)
+    if (out_mut_ref == NULL)
         return 0;
 
-    graph_node *node = graph->nodes + index;
+    graph_node *node = graph_ref->nodes + index;
 
     if (node == NULL)
     {
-        *out_ref = NULL;
+        *out_mut_ref = NULL;
         return 0;
     }
 
-    *out_ref = node->components;
+    *out_mut_ref = node->components;
     return node->edge_count;
 }

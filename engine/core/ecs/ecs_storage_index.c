@@ -11,7 +11,7 @@ struct storage_index
     ecs_storage *storages;
 };
 
-ecs_storage ecs_storage_new(component_id *components, size_t *component_sizes, uint32_t components_count);
+ecs_storage ecs_storage_new(const component_id *const components, const size_t *const component_sizes, uint32_t components_count);
 void ecs_storage_release(const ecs_storage *const storage);
 
 storage_index *ecs_storage_index_new(uint32_t capacity)
@@ -45,44 +45,44 @@ void ecs_storage_index_release(const storage_index *const index_owning)
     CFF_RELEASE(index_owning);
 }
 
-void ecs_storage_index_new_storage(storage_index *const index, archetype_id arch_id, component_id *components, size_t *sizes, uint32_t lenght)
+void ecs_storage_index_new_storage(storage_index *const index_mut_ref, archetype_id arch_id, const component_id *const components_owning, const size_t *const sizes_owning, uint32_t lenght)
 {
-    if (arch_id > index->capacity)
+    if (arch_id > index_mut_ref->capacity)
     {
-        uint32_t new_capacity = index->capacity * 2;
+        uint32_t new_capacity = index_mut_ref->capacity * 2;
 
         while (arch_id > new_capacity)
         {
             new_capacity *= 2;
         }
 
-        index->storages = CFF_ARR_RESIZE(index->storages, new_capacity);
-        index->used = CFF_ARR_RESIZE(index->used, new_capacity);
-        index->capacity = new_capacity;
+        index_mut_ref->storages = CFF_ARR_RESIZE(index_mut_ref->storages, new_capacity);
+        index_mut_ref->used = CFF_ARR_RESIZE(index_mut_ref->used, new_capacity);
+        index_mut_ref->capacity = new_capacity;
     }
 
-    if (index->count == index->capacity)
+    if (index_mut_ref->count == index_mut_ref->capacity)
     {
-        uint32_t new_capacity = index->capacity * 2;
-        index->storages = CFF_ARR_RESIZE(index->storages, new_capacity);
-        index->used = CFF_ARR_RESIZE(index->used, new_capacity);
-        index->capacity = new_capacity;
+        uint32_t new_capacity = index_mut_ref->capacity * 2;
+        index_mut_ref->storages = CFF_ARR_RESIZE(index_mut_ref->storages, new_capacity);
+        index_mut_ref->used = CFF_ARR_RESIZE(index_mut_ref->used, new_capacity);
+        index_mut_ref->capacity = new_capacity;
     }
 
-    index->storages[arch_id] = ecs_storage_new(components, sizes, lenght);
-    index->used[arch_id] = 1;
-    index->count++;
+    index_mut_ref->storages[arch_id] = ecs_storage_new(components_owning, sizes_owning, lenght);
+    index_mut_ref->used[arch_id] = 1;
+    index_mut_ref->count++;
 }
 
-ecs_storage *ecs_storage_index_get(const storage_index *const index, archetype_id arch_id)
+ecs_storage *ecs_storage_index_get(const storage_index *const index_ref, archetype_id arch_id)
 {
-    if (index->used[arch_id])
-        return (ecs_storage *)(&index->storages[arch_id]);
+    if (index_ref->used[arch_id])
+        return (ecs_storage *)(&index_ref->storages[arch_id]);
     return NULL;
 }
-void ecs_storage_index_remove(storage_index *const index, archetype_id arch_id)
+void ecs_storage_index_remove(storage_index *const index_mut_ref, archetype_id arch_id)
 {
-    index->used[arch_id] = 0;
-    ecs_storage_release(index->storages + arch_id);
-    index->count--;
+    index_mut_ref->used[arch_id] = 0;
+    ecs_storage_release(index_mut_ref->storages + arch_id);
+    index_mut_ref->count--;
 }

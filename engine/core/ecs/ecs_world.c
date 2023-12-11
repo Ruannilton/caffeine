@@ -167,7 +167,7 @@ void ecs_world_set_entity_component(const ecs_world *const world_ref, entity_id 
 // TODO
 void ecs_worl_register_system(const ecs_world *const world_ref, ecs_query *query, ecs_system system)
 {
-    component_id *comps = ecs_query_get_components(query);
+    const component_id *comps = ecs_query_get_components(query);
     uint32_t comp_count = ecs_query_get_count(query);
 
     component_id min_deps = ecs_component_dependency_get_less_dependencies(world_ref->dependencies_owning, comps, comp_count);
@@ -189,14 +189,14 @@ void ecs_worl_register_system(const ecs_world *const world_ref, ecs_query *query
     }
 }
 
-static bool is_archetype_valid(const ecs_world *const world, archetype_id id, ecs_query *query)
+static bool is_archetype_valid(const ecs_world *const world_ref, archetype_id id, ecs_query *query_ref)
 {
-    component_id *comps = ecs_query_get_components(query);
-    uint32_t comp_count = ecs_query_get_count(query);
+    const component_id *comps = ecs_query_get_components(query_ref);
+    uint32_t comp_count = ecs_query_get_count(query_ref);
     for (size_t j = 0; j < comp_count; j++)
     {
         component_id comp_id = comps[j];
-        if (!ecs_archetype_has_component(world->archetypes_owning, id, comp_id))
+        if (!ecs_archetype_has_component(world_ref->archetypes_owning, id, comp_id))
         {
             return false;
         }

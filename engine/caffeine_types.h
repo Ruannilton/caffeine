@@ -5,7 +5,6 @@
 #include <stdint.h>
 
 #include "caffeine.h"
-#include "caffeine_flags.h"
 
 /**
  * @typedef cff_size
@@ -18,16 +17,18 @@ typedef uint64_t cff_size;
  * @enum cff_ord_e
  * @brief Represents the ordering relationship between two values.
  */
-typedef enum {
+typedef enum
+{
   CFF_LESS =
       -1, /**< Indicates that the first value is less than the second value. */
   CFF_EQUAL =
-      0, /**< Indicates that the first value is equal to the second value. */
+      0,           /**< Indicates that the first value is equal to the second value. */
   CFF_GREATER = 1, /**< Indicates that the first value is greater than the
                       second value. */
 } cff_ord_e;
 
-typedef enum {
+typedef enum
+{
   LOG_LEVEL_ERROR = 0,
   LOG_LEVEL_WARNING,
   LOG_LEVEL_DEBUG,
@@ -39,11 +40,12 @@ typedef enum {
  * @enum cff_err_e
  * @brief Error codes that can be returned by the library functions.
  */
-typedef enum {
-  CFF_ERR_NONE = 0,           /**< No error occurred. */
-  CFF_ERR_ALLOC = -1,         /**< Error during memory allocation. */
-  CFF_ERR_REALLOC = -2,       /**< Error during memory reallocation. */
-  CFF_ERR_INVALID_PARAM = -3, /**< Invalid parameter passed to a function. */
+typedef enum
+{
+  CFF_ERR_NONE = 0,               /**< No error occurred. */
+  CFF_ERR_ALLOC = -1,             /**< Error during memory allocation. */
+  CFF_ERR_REALLOC = -2,           /**< Error during memory reallocation. */
+  CFF_ERR_INVALID_PARAM = -3,     /**< Invalid parameter passed to a function. */
   CFF_ERR_INVALID_OPERATION = -4, /**< Invalid operation performed. */
   CFF_ERR_OUT_OF_BOUNDS = -5,     /**< Accessing data out of bounds. */
   CFF_ERR_UNKNOW = -6,            /**< Unknown error occurred. */
@@ -53,7 +55,11 @@ typedef enum {
   CFF_ERR_FILE_WRITE = -10,       /**< Unknown error occurred. */
 } cff_err_e;
 
-typedef enum { FILE_READ = 1, FILE_WRITE = 2 } file_attributes;
+typedef enum
+{
+  FILE_READ = 1,
+  FILE_WRITE = 2
+} file_attributes;
 
 /**
  * @typedef cff_order_function

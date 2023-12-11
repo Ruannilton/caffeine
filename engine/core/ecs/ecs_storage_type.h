@@ -4,8 +4,8 @@
 
 struct ecs_storage
 {
-    size_t *component_sizes;
-    component_id *components;
+    const size_t *component_sizes;
+    const component_id *components;
     uint32_t component_count;
 
     uint32_t entity_count;

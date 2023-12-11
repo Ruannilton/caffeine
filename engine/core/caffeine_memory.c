@@ -98,7 +98,8 @@ void *cff_mem_alloc_dbg(uint64_t size, const char *const block_name, const char 
 
 void *cff_mem_realloc_dbg(const void *ptr_owning, uint64_t size, const char *const file, uint64_t line)
 {
-
+  (void)file;
+  (void)line;
   mem_header *old_header = _get_header(ptr_owning);
   _mem_allocked -= old_header->size;
 
@@ -130,27 +131,37 @@ void cff_mem_release_dbg(const void *const ptr_owning, const char *const file, u
 
 void cff_mem_copy_dbg(const void *const from_ref, void *const dest_mut_ref, uint64_t size, const char *const file, uint64_t line)
 {
+  (void)file;
+  (void)line;
   cff_mem_copy(from_ref, dest_mut_ref, size);
 }
 
 void cff_mem_move_dbg(const void *const from_ref, void *const dest_mut_ref, uint64_t size, const char *const file, uint64_t line)
 {
+  (void)file;
+  (void)line;
   cff_mem_move(from_ref, dest_mut_ref, size);
 }
 
 bool cff_mem_cmp_dbg(const void *const from_ref, const void *const dest_ref, uint64_t size, const char *const file, uint64_t line)
 {
+  (void)file;
+  (void)line;
   bool result = cff_mem_cmp(from_ref, dest_ref, size);
   return result;
 }
 
 void cff_mem_set_dbg(const void *const data_ref, void *const dest_mut_ref, uint64_t data_size, uint64_t buffer_lenght, const char *const file, uint64_t line)
 {
+  (void)file;
+  (void)line;
   cff_mem_set(data_ref, dest_mut_ref, data_size, buffer_lenght);
 }
 
 void cff_mem_zero_dbg(void *const dest_mut_ref, uint64_t buffer_lenght, const char *const file, uint64_t line)
 {
+  (void)file;
+  (void)line;
   cff_mem_zero(dest_mut_ref, buffer_lenght);
 }
 

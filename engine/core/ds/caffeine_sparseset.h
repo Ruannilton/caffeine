@@ -3,9 +3,13 @@
 #include <stdint.h>
 #include "../caffeine_memory.h"
 
+#ifndef cff_release
 #define cff_release(A) CFF_RELEASE((void *)A)
+#endif
 
+#ifndef alloc_gen_array
 #define alloc_gen_array(PTR, CAPACITY) PTR = CFF_ARR_NEW(__typeof__(PTR[0]), CAPACITY, "ARRAY BLOCK")
+#endif
 
 #define cff_sparse_dcltype(NAME, TYPE) \
     typedef struct                     \

@@ -34,65 +34,65 @@ entity_index *ecs_entity_index_new(uint32_t capacity)
     return index;
 }
 
-void ecs_entity_index_release(entity_index *index)
+void ecs_entity_index_release(const entity_index *const index_owning)
 {
-    if (index == NULL)
+    if (index_owning == NULL)
         return;
 
-    CFF_RELEASE(index->trash);
-    CFF_RELEASE(index->data);
-    CFF_RELEASE(index);
+    CFF_RELEASE(index_owning->trash);
+    CFF_RELEASE(index_owning->data);
+    CFF_RELEASE(index_owning);
 }
 
-entity_id ecs_entity_index_new_entity(entity_index *index)
+entity_id ecs_entity_index_new_entity(entity_index *const index_mut_ref)
 {
-    if (index->trash_count > 0)
+    if (index_mut_ref->trash_count > 0)
     {
-        entity_id old_id = index->trash[index->trash_count - 1];
-        index->trash_count--;
+        entity_id old_id = index_mut_ref->trash[index_mut_ref->trash_count - 1];
+        index_mut_ref->trash_count--;
         return old_id;
     }
 
-    if (index->count == index->capacity)
+    if (index_mut_ref->count == index_mut_ref->capacity)
     {
-        index->data = CFF_ARR_RESIZE(index->data, index->capacity * 2);
-        index->capacity *= 2;
+        index_mut_ref->data = CFF_ARR_RESIZE(index_mut_ref->data, index_mut_ref->capacity * 2);
+        index_mut_ref->capacity *= 2;
     }
-    entity_id id = (entity_id)index->count;
-    index->count++;
+    entity_id id = (entity_id)index_mut_ref->count;
+    index_mut_ref->count++;
     return id;
 }
 
-void ecs_entity_index_set_entity(entity_index *index, entity_id id, int row, ecs_storage *storage)
+void ecs_entity_index_set_entity(entity_index *const index_mut_ref, entity_id id, int row, ecs_storage *const storage_owning)
 {
-    if (id < index->capacity)
+    if (id < index_mut_ref->capacity)
     {
-        index->data[id] = (entity_record){.row = row, .storage = storage};
+        index_mut_ref->data[id] = (entity_record){.row = row, .storage = storage_owning};
     }
 }
 
-void ecs_entity_index_remove_entity(entity_index *index, entity_id id)
+void ecs_entity_index_remove_entity(entity_index *const index_mut_ref, entity_id id)
 {
-    if (id < index->capacity)
+    if (id < index_mut_ref->capacity)
     {
-        index->data[id] = (entity_record){.row = 0, .storage = 0};
+        index_mut_ref->data[id] = (entity_record){.row = 0, .storage = 0};
     }
 
-    if (index->trash_count == index->trash_capacity)
+    if (index_mut_ref->trash_count == index_mut_ref->trash_capacity)
     {
-        index->trash = CFF_ARR_RESIZE(index->trash, index->trash_capacity * 2);
-        index->trash_capacity *= 2;
+        index_mut_ref->trash = CFF_ARR_RESIZE(index_mut_ref->trash, index_mut_ref->trash_capacity * 2);
+        index_mut_ref->trash_capacity *= 2;
     }
 
-    index->trash[index->trash_count] = id;
-    index->trash_count++;
+    index_mut_ref->trash[index_mut_ref->trash_count] = id;
+    index_mut_ref->trash_count++;
 }
 
-entity_record ecs_entity_index_get_entity(entity_index *index, entity_id id)
+entity_record ecs_entity_index_get_entity(const entity_index *const index_ref, entity_id id)
 {
-    if (id < index->capacity)
+    if (id < index_ref->capacity)
     {
-        return index->data[id];
+        return index_ref->data[id];
     }
     return (entity_record){.row = 0, .storage = 0};
 }

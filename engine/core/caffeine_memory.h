@@ -78,7 +78,7 @@ void cff_mem_zero_dbg(void *const dest_mut_ref, uint64_t buffer_lenght, const ch
 
 #endif
 
-#define CFF_ARR_NEW(TYPE, LENGHT, NAME) CFF_ALLOC(sizeof(TYPE) * LENGHT, NAME)
+#define CFF_ARR_NEW(TYPE, LENGHT, NAME) ((TYPE *)CFF_ALLOC(sizeof(TYPE) * LENGHT, NAME))
 
 #define CFF_ARR_RESIZE(ARRAY, LENGHT) ((__typeof__(*ARRAY) *)CFF_REALLOC((void *)(ARRAY), sizeof(__typeof__(*ARRAY)) * (LENGHT)))
 
