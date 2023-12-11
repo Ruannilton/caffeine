@@ -82,7 +82,7 @@ void ecs_archetype_graph_add(archetype_graph *const graph_mut_ref, archetype_id 
 
         int edge_pos = get_edge_index(graph_mut_ref, current_node, component);
 
-        if (edge_pos == INVALID_ID)
+        if (edge_pos == -1)
         {
             // caff_raw_log("\t[GRAPH] Edge not Found\n");
 
@@ -196,7 +196,7 @@ static uint32_t get_node_with(const archetype_graph *const graph_ref, uint32_t c
         component_id component = components[i];
         int edge_pos = get_edge_index(graph_ref, current_node, component);
 
-        if (edge_pos == INVALID_ID)
+        if (edge_pos == -1)
             return INVALID_ID;
 
         current_node = on_add_branch(graph_ref, current_node, edge_pos);

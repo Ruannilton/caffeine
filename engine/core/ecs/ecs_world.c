@@ -21,57 +21,71 @@ static bool is_archetype_valid(const ecs_world *const world, archetype_id id, ec
 
 ecs_world *ecs_world_new()
 {
+
+    component_index *components_owning = ecs_new_component_index(64);
+
+    if (components_owning == NULL)
+    {
+        return NULL;
+    }
+
+    archetype_index *archetypes_owning = ecs_new_archetype_index(64);
+
+    if (archetypes_owning == NULL)
+    {
+        ecs_release_component_index(components_owning);
+        return NULL;
+    }
+
+    component_dependency *dependencies_owning = ecs_component_dependency_init(64);
+
+    if (dependencies_owning == NULL)
+    {
+        ecs_release_archetype_index(archetypes_owning);
+        ecs_release_component_index(components_owning);
+        return NULL;
+    }
+
+    storage_index *storages_owning = ecs_storage_index_new(64);
+
+    if (storages_owning == NULL)
+    {
+        ecs_component_dependency_release(dependencies_owning);
+        ecs_release_archetype_index(archetypes_owning);
+        ecs_release_component_index(components_owning);
+        return NULL;
+    }
+
+    entity_index *entities_owning = ecs_entity_index_new(64);
+    if (entities_owning == NULL)
+    {
+        ecs_storage_index_release(storages_owning);
+        ecs_component_dependency_release(dependencies_owning);
+        ecs_release_archetype_index(archetypes_owning);
+        ecs_release_component_index(components_owning);
+        return NULL;
+    }
+
     ecs_world *world_owning = (ecs_world *)CFF_ALLOC(sizeof(ecs_world), "WORLD");
 
     if (world_owning == NULL)
-        return NULL;
-
-    world_owning->components_owning = ecs_new_component_index(64);
-
-    if (world_owning->components_owning == NULL)
     {
-        cff_mem_release(world_owning);
+        ecs_entity_index_release(entities_owning);
+        ecs_storage_index_release(storages_owning);
+        ecs_component_dependency_release(dependencies_owning);
+        ecs_release_archetype_index(archetypes_owning);
+        ecs_release_component_index(components_owning);
         return NULL;
     }
 
-    world_owning->archetypes_owning = ecs_new_archetype_index(64);
+    *world_owning = (ecs_world){
+        .components_owning = components_owning,
+        .archetypes_owning = archetypes_owning,
+        .storages_owning = storages_owning,
+        .dependencies_owning = dependencies_owning,
+        .entities_owning = entities_owning,
+    };
 
-    if (world_owning->archetypes_owning == NULL)
-    {
-        ecs_release_component_index(world_owning->components_owning);
-        cff_mem_release(world_owning);
-        return NULL;
-    }
-
-    world_owning->dependencies_owning = ecs_component_dependency_init(64);
-    if (world_owning->dependencies_owning == NULL)
-    {
-        ecs_release_archetype_index(world_owning->archetypes_owning);
-        ecs_release_component_index(world_owning->components_owning);
-        cff_mem_release(world_owning);
-        return NULL;
-    }
-
-    world_owning->storages_owning = ecs_storage_index_new(64);
-    if (world_owning->dependencies_owning == NULL)
-    {
-        ecs_component_dependency_release(world_owning->dependencies_owning);
-        ecs_release_archetype_index(world_owning->archetypes_owning);
-        ecs_release_component_index(world_owning->components_owning);
-        cff_mem_release(world_owning);
-        return NULL;
-    }
-
-    world_owning->entities_owning = ecs_entity_index_new(64);
-    if (world_owning->entities_owning == NULL)
-    {
-        ecs_storage_index_release(world_owning->storages_owning);
-        ecs_component_dependency_release(world_owning->dependencies_owning);
-        ecs_release_archetype_index(world_owning->archetypes_owning);
-        ecs_release_component_index(world_owning->components_owning);
-        cff_mem_release(world_owning);
-        return NULL;
-    }
     return world_owning;
 }
 
@@ -167,6 +181,7 @@ void ecs_world_set_entity_component(const ecs_world *const world_ref, entity_id 
 // TODO
 void ecs_worl_register_system(const ecs_world *const world_ref, ecs_query *query, ecs_system system)
 {
+    (void)system;
     const component_id *comps = ecs_query_get_components(query);
     uint32_t comp_count = ecs_query_get_count(query);
 
