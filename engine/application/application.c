@@ -13,6 +13,7 @@ typedef struct
     char *name;
     bool is_running;
     bool is_paused;
+    ecs_world *world;
 } application;
 
 static application _application = {0};
@@ -28,7 +29,7 @@ static void _caffeine_on_quit()
     _application.is_running = false;
 }
 
-bool caffeine_application_init(char *app_name)
+bool caffeine_application_init(char *app_name, void (*ecs_init)(ecs_world *))
 {
     caff_log(LOG_LEVEL_TRACE, "Init application\n");
 
@@ -59,20 +60,21 @@ bool caffeine_application_init(char *app_name)
 
     cff_platform_set_quit_clkb(_caffeine_on_quit);
 
-    // if (!ecs_init())
-    // {
-    //     return false;
-    // }
-
     caff_log(LOG_LEVEL_TRACE, "Application initalized\n");
+
+    _application.world = ecs_world_new();
+    if (_application.world == NULL)
+    {
+        caff_log(LOG_LEVEL_ERROR, "Failed to initialize ecs world\n");
+        return false;
+    }
+    ecs_init(_application.world);
     return true;
 }
 
 bool caffeine_application_run()
 {
     caff_log(LOG_LEVEL_TRACE, "Application running\n");
-
-    ecs_setup_test();
 
     while (_application.is_running)
     {
@@ -82,6 +84,8 @@ bool caffeine_application_run()
             continue;
 
         caff_input_update();
+
+        ecs_world_step(_application.world);
     }
 
     caffeine_application_shutdown();
@@ -95,9 +99,9 @@ void caffeine_application_shutdown()
     _application.is_running = false;
     _application.is_paused = true;
 
-    cff_platform_shutdown();
+    ecs_world_release(_application.world);
 
-    // ecs_end();
+    cff_platform_shutdown();
     caff_input_end();
     caffeine_event_shutdown();
     caff_log_end();

@@ -82,6 +82,9 @@ void cff_mem_zero_dbg(void *const dest_mut_ref, uint64_t buffer_lenght, const ch
 
 #define CFF_ARR_RESIZE(ARRAY, LENGHT) ((__typeof__(*ARRAY) *)CFF_REALLOC((void *)(ARRAY), sizeof(__typeof__(*ARRAY)) * (LENGHT)))
 
-#define CFF_ARR_COPY(FROM, TO, LEN)                                                   \
-    TO = ((__typeof__(*FROM) *)CFF_ALLOC(sizeof(__typeof__(*FROM)) * (LEN), "COPY")); \
-    CFF_COPY(FROM, TO, sizeof(__typeof__(*FROM)) * (LEN));
+#define CFF_ARR_COPY(FROM, TO, LEN)                                                       \
+    {                                                                                     \
+        TO = ((__typeof__(*FROM) *)CFF_ALLOC(sizeof(__typeof__(*FROM)) * (LEN), "COPY")); \
+        if (TO != NULL)                                                                   \
+            CFF_COPY(FROM, TO, sizeof(__typeof__(*FROM)) * (LEN));                        \
+    }

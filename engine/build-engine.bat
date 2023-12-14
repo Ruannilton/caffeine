@@ -17,4 +17,4 @@ SET "linkerFlags=-luser32 -lshell32"
 SET "defines=-D_DEBUG -DCAFF_EXPORT -D_CRT_SECURE_NO_WARNINGS"
 
 REM "Building %assembly%"
-clang %files% %compilerFlags% -o ../bin/%assembly%.dll %defines% %includeFlags% %linkerFlags%
+clang %files% %compilerFlags% -o ../bin/%assembly%.dll %defines% %includeFlags% %linkerFlags% 

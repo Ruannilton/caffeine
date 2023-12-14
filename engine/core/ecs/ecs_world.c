@@ -6,8 +6,8 @@
 #include "ecs_storage_index.h"
 #include "ecs_entity_index.h"
 #include "component_dependency.h"
+#include "ecs_system_index.h"
 #include "../caffeine_memory.h"
-
 struct ecs_world
 {
     component_index *components_owning;
@@ -15,9 +15,10 @@ struct ecs_world
     storage_index *storages_owning;
     component_dependency *dependencies_owning;
     entity_index *entities_owning;
+    system_index *systems_owning;
 };
 
-static bool is_archetype_valid(const ecs_world *const world, archetype_id id, ecs_query *query);
+static bool ecs_world_is_archetype_valid(const ecs_world *const world, archetype_id id, ecs_query *query);
 
 ecs_world *ecs_world_new()
 {
@@ -66,6 +67,17 @@ ecs_world *ecs_world_new()
         return NULL;
     }
 
+    system_index *systems_owning = ecs_system_index_new(storages_owning, 64);
+    if (systems_owning == NULL)
+    {
+        ecs_entity_index_release(entities_owning);
+        ecs_storage_index_release(storages_owning);
+        ecs_component_dependency_release(dependencies_owning);
+        ecs_release_archetype_index(archetypes_owning);
+        ecs_release_component_index(components_owning);
+        return NULL;
+    }
+
     ecs_world *world_owning = (ecs_world *)CFF_ALLOC(sizeof(ecs_world), "WORLD");
 
     if (world_owning == NULL)
@@ -84,6 +96,7 @@ ecs_world *ecs_world_new()
         .storages_owning = storages_owning,
         .dependencies_owning = dependencies_owning,
         .entities_owning = entities_owning,
+        .systems_owning = systems_owning,
     };
 
     return world_owning;
@@ -91,6 +104,7 @@ ecs_world *ecs_world_new()
 
 void ecs_world_release(const ecs_world *const world_owning)
 {
+    ecs_system_index_release(world_owning->systems_owning);
     ecs_entity_index_release(world_owning->entities_owning);
     ecs_storage_index_release(world_owning->storages_owning);
     ecs_component_dependency_release(world_owning->dependencies_owning);
@@ -179,11 +193,10 @@ void ecs_world_set_entity_component(const ecs_world *const world_ref, entity_id 
 }
 
 // TODO
-void ecs_worl_register_system(const ecs_world *const world_ref, ecs_query *query, ecs_system system)
+void ecs_worl_register_system(const ecs_world *const world_ref, ecs_query *query_owning, ecs_system system)
 {
-    (void)system;
-    const component_id *comps = ecs_query_get_components(query);
-    uint32_t comp_count = ecs_query_get_count(query);
+    const component_id *comps = ecs_query_get_components(query_owning);
+    uint32_t comp_count = ecs_query_get_count(query_owning);
 
     component_id min_deps = ecs_component_dependency_get_less_dependencies(world_ref->dependencies_owning, comps, comp_count);
 
@@ -196,15 +209,22 @@ void ecs_worl_register_system(const ecs_world *const world_ref, ecs_query *query
     for (size_t i = 0; i < dep_count; i++)
     {
         archetype_id arch_id = dependencies[i];
-        if (is_archetype_valid(world_ref, arch_id, query))
+        if (ecs_world_is_archetype_valid(world_ref, arch_id, query_owning))
         {
             eleged[eleged_count] = arch_id;
             eleged_count++;
         }
     }
+
+    ecs_system_index_add(world_ref->systems_owning, query_owning, eleged, eleged_count, system);
 }
 
-static bool is_archetype_valid(const ecs_world *const world_ref, archetype_id id, ecs_query *query_ref)
+void ecs_world_step(const ecs_world *const world_ref)
+{
+    ecs_system_step(world_ref->systems_owning);
+}
+
+static bool ecs_world_is_archetype_valid(const ecs_world *const world_ref, archetype_id id, ecs_query *query_ref)
 {
     const component_id *comps = ecs_query_get_components(query_ref);
     uint32_t comp_count = ecs_query_get_count(query_ref);

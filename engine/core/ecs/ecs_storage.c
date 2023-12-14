@@ -113,6 +113,32 @@ void *ecs_storage_get_component(const ecs_storage *const storage_ref, int row, c
     return NULL;
 }
 
+void *ecs_storage_get_component_list(const ecs_storage *const storage_ref, component_id component)
+{
+    int component_index = _storage_get_component_index(storage_ref, component);
+    if (component_index != -1)
+    {
+        return storage_ref->entity_data[component_index];
+    }
+    return NULL;
+}
+
+entity_id *ecs_storage_get_enetities_ids(const ecs_storage *const storage_ref)
+{
+    if (storage_ref != NULL)
+    {
+        return storage_ref->entities;
+    }
+    return NULL;
+}
+
+uint32_t ecs_storage_count(const ecs_storage *const storage_ref)
+{
+    if (storage_ref != NULL)
+        return storage_ref->entity_count;
+    return 0;
+}
+
 static int _storage_get_component_index(const ecs_storage *const storage_ref, component_id id)
 {
     for (size_t i = 0; i < storage_ref->component_count; i++)
