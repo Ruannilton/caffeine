@@ -42,6 +42,14 @@ void caffeine_application_setup_world(ecs_world *world)
   position_component_id = position_id;
   speed_component_id = speed_id;
 
+  ecs_query_builder *query_builder = ecs_query_builder_new();
+  ecs_query_builder_with_component(query_builder, position_id);
+  ecs_query_builder_with_component(query_builder, speed_id);
+
+  ecs_query *move_query = ecs_query_builder_build(query_builder);
+
+  ecs_worl_register_system(world, move_query, update_position);
+
   ecs_archetype runner = ecs_create_archetype(3);
   ecs_archetype_add(&runner, position_id);
   ecs_archetype_add(&runner, speed_id);
@@ -51,18 +59,11 @@ void caffeine_application_setup_world(ecs_world *world)
   ecs_archetype_add(&ball, physic_id);
 
   archetype_id runner_id = ecs_world_add_archetype(world, runner);
+
   entity_id e_runner = ecs_world_create_entity(world, runner_id);
 
   position_component pos = {.x = 5, .y = 7, .z = -1};
   speed_component spd = {.x = 1, .y = 0, .z = -1};
   ecs_world_set_entity_component(world, e_runner, position_id, &pos);
   ecs_world_set_entity_component(world, e_runner, speed_id, &spd);
-
-  ecs_query_builder *query_builder = ecs_query_builder_new();
-  ecs_query_builder_with_component(query_builder, position_id);
-  ecs_query_builder_with_component(query_builder, speed_id);
-
-  ecs_query *move_query = ecs_query_builder_build(query_builder);
-
-  ecs_worl_register_system(world, move_query, update_position);
 }

@@ -139,6 +139,8 @@ archetype_id ecs_world_add_archetype(const ecs_world *const world_ref, ecs_arche
         component_sizes[i] = ecs_get_component_size(world_ref->components_owning, c);
     }
 
+    ecs_system_index_add_archetype(world_ref->systems_owning, id, components, archetype.count);
+
     ecs_storage_index_new_storage(world_ref->storages_owning, id, components, component_sizes, archetype.count);
 
     return id;

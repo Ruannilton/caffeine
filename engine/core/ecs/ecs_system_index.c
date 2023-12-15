@@ -3,6 +3,7 @@
 #include "../ds/caffeine_vector.h"
 #include "../ds/caffeine_hashmap.h"
 #include "ecs_storage_index.h"
+#include "ecs_archetype.h"
 #include "ecs_storage.h"
 
 typedef uint32_t query_id;
@@ -77,7 +78,7 @@ struct system_index
 
 static void query_runner_init(query_runner *runner, ecs_system system, archetype_id *archetypes, uint32_t lenght);
 static void query_runner_release(query_runner *runner);
-// static void query_runner_add_arch(query_runner *runner, archetype_id archetype);
+static void query_runner_add_arch(query_runner *runner, archetype_id archetype);
 // static void query_runner_rem_arch(query_runner *runner, archetype_id archetype);
 
 system_index *ecs_system_index_new(const storage_index *storage_index, const uint32_t capacity)
@@ -145,10 +146,42 @@ void ecs_system_index_add(system_index *index, ecs_query *query, archetype_id *a
     runner_list_add_at(&(index->runners), runner, id);
 }
 
-void ecs_system_index_add_archetype(system_index *index, archetype_id archetype)
+static bool a_contains_b(const component_id *a_arr, uint32_t size_a, const component_id *b_arr, uint32_t size_b)
 {
-    (void)index;
-    (void)archetype;
+    uint32_t i = 0, j = 0;
+
+    while (i < size_a && j < size_b)
+    {
+        if (a_arr[i] == b_arr[j])
+        {
+            j++; // Move to the next element in B
+        }
+        i++; // Move to the next element in A
+    }
+
+    return (j == size_b);
+}
+
+void ecs_system_index_add_archetype(system_index *index, archetype_id archetype, const component_id *components, uint32_t component_count)
+{
+    for (uint32_t i = 0; i < index->queries.count; i++)
+    {
+        ecs_query *query = query_list_get(&(index->queries), i);
+        const component_id *query_components = ecs_query_get_components(query);
+        uint32_t query_components_count = ecs_query_get_count(query);
+
+        bool archetype_valid = a_contains_b(components, component_count, query_components, query_components_count);
+
+        if (archetype_valid)
+        {
+            query_id q_id;
+            if (query_map_get(&(index->query_index), query, &q_id))
+            {
+                query_runner *runner = runner_list_get_ref(&(index->runners), q_id);
+                query_runner_add_arch(runner, archetype);
+            }
+        }
+    }
 }
 
 void ecs_system_step(system_index *index)
@@ -190,10 +223,10 @@ static void query_runner_release(query_runner *runner)
     runner->system = NULL;
 }
 
-// static void query_runner_add_arch(query_runner *runner, archetype_id archetype)
-// {
-//     archetype_list_add(&(runner->archetypes), archetype);
-// }
+static void query_runner_add_arch(query_runner *runner, archetype_id archetype)
+{
+    archetype_list_add(&(runner->archetypes), archetype);
+}
 // static void query_runner_rem_arch(query_runner *runner, archetype_id archetype)
 // {
 //     archetype_list_remove(&(runner->archetypes), archetype);
