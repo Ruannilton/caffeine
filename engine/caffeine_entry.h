@@ -1,9 +1,7 @@
 #pragma once
 
-#include "caffeine_types.h"
 #include "./core/ecs/ecs_world.h"
 #include "application/application.h"
-#include "./core/caffeine_logging.h"
 
 extern void caffeine_application_setup_world(ecs_world *world);
 

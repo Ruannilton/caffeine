@@ -184,7 +184,7 @@ void ecs_system_index_add_archetype(system_index *index, archetype_id archetype,
     }
 }
 
-void ecs_system_step(system_index *index)
+void ecs_system_step(system_index *index, double delta_time)
 {
     for (size_t i = 0; i < index->runners.count; i++)
     {
@@ -196,7 +196,7 @@ void ecs_system_step(system_index *index)
         {
             archetype_id arch = archetype_list_get(&(runner->archetypes), j);
             query_it it = ecs_storage_index_get(index->storage_index, arch);
-            runner->system(it, ecs_storage_count(it));
+            runner->system(it, ecs_storage_count(it), delta_time);
         }
     }
 }

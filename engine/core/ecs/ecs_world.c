@@ -8,6 +8,7 @@
 #include "component_dependency.h"
 #include "ecs_system_index.h"
 #include "../caffeine_memory.h"
+
 struct ecs_world
 {
     component_index *components_owning;
@@ -113,6 +114,11 @@ void ecs_world_release(const ecs_world *const world_owning)
     CFF_RELEASE(world_owning);
 }
 
+component_id ecs_world_get_component(const ecs_world *const world_ref, const char *name)
+{
+    return ecs_get_component_id(world_ref->components_owning, name);
+}
+
 component_id ecs_world_add_component(const ecs_world *const world_ref, const char *name, size_t size, size_t align)
 {
     return ecs_register_component(world_ref->components_owning, name, size, align);
@@ -126,24 +132,26 @@ void ecs_world_remove_component(const ecs_world *const world_ref, component_id i
 
 archetype_id ecs_world_add_archetype(const ecs_world *const world_ref, ecs_archetype archetype)
 {
-    archetype_id id = ecs_register_archetype(world_ref->archetypes_owning, archetype);
+    archetype_id archetype_id = ecs_register_archetype(world_ref->archetypes_owning, archetype);
 
     size_t *component_sizes = (size_t *)CFF_ALLOC(archetype.count * sizeof(size_t), "STORAGE COMPONENTS SIZES");
     component_id *components = (component_id *)CFF_ALLOC(archetype.count * sizeof(component_id), "STORAGE COMPONENTS");
+    const char **component_names = (const char **)CFF_ALLOC(archetype.count * sizeof(const char *), "STORAGE COMPONENTS NAMES");
 
     for (size_t i = 0; i < archetype.count; i++)
     {
-        component_id c = archetype.components[i];
-        ecs_component_dependency_add_dependency(world_ref->dependencies_owning, c, id);
-        components[i] = c;
-        component_sizes[i] = ecs_get_component_size(world_ref->components_owning, c);
+        component_id component = archetype.components[i];
+        ecs_component_dependency_add_dependency(world_ref->dependencies_owning, component, archetype_id);
+        components[i] = component;
+        component_sizes[i] = ecs_get_component_size(world_ref->components_owning, component);
+        component_names[i] = ecs_get_component_name(world_ref->components_owning, component);
     }
 
-    ecs_system_index_add_archetype(world_ref->systems_owning, id, components, archetype.count);
+    ecs_system_index_add_archetype(world_ref->systems_owning, archetype_id, components, archetype.count);
 
-    ecs_storage_index_new_storage(world_ref->storages_owning, id, components, component_sizes, archetype.count);
+    ecs_storage_index_new_storage(world_ref->storages_owning, archetype_id, components, component_sizes, component_names, archetype.count);
 
-    return id;
+    return archetype_id;
 }
 
 void ecs_world_remove_archetype(const ecs_world *const world_ref, archetype_id id)
@@ -194,7 +202,6 @@ void ecs_world_set_entity_component(const ecs_world *const world_ref, entity_id 
     ecs_storage_set_component(record.storage, record.row, component, data);
 }
 
-// TODO
 void ecs_worl_register_system(const ecs_world *const world_ref, ecs_query *query_owning, ecs_system system)
 {
     const component_id *comps = ecs_query_get_components(query_owning);
@@ -221,9 +228,9 @@ void ecs_worl_register_system(const ecs_world *const world_ref, ecs_query *query
     ecs_system_index_add(world_ref->systems_owning, query_owning, eleged, eleged_count, system);
 }
 
-void ecs_world_step(const ecs_world *const world_ref)
+void ecs_world_step(const ecs_world *const world_ref, double delta_time)
 {
-    ecs_system_step(world_ref->systems_owning);
+    ecs_system_step(world_ref->systems_owning, delta_time);
 }
 
 static bool ecs_world_is_archetype_valid(const ecs_world *const world_ref, archetype_id id, ecs_query *query_ref)

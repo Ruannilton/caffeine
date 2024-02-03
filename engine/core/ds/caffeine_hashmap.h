@@ -77,8 +77,8 @@
         if (__m_ptr_3->count > __m_ptr_3->capacity * 0.7)                                                         \
         {                                                                                                         \
             uint32_t __n_capacity = __m_ptr_3->capacity * 2;                                                      \
-            DATA *__n_data_buffer;                                                                                \
-            KEY *__n_key_buffer;                                                                                  \
+            __typeof__(DATA) *__n_data_buffer;                                                                    \
+            __typeof__(KEY) *__n_key_buffer;                                                                      \
             uint8_t *__n_used_buffer;                                                                             \
             uint32_t __n_max_collision = 0;                                                                       \
             alloc_gen_array(__n_data_buffer, __n_capacity);                                                       \
@@ -262,7 +262,6 @@
                                                                                                       \
     void NAME##_resize(NAME *m_ptr, uint32_t new_capacity)                                            \
     {                                                                                                 \
-        printf("rez\n");                                                                              \
         DATA_TYPE *n_data_buffer = (DATA_TYPE *)CFF_ARR_NEW(DATA_TYPE, new_capacity, "ARRAY BLOCK");  \
         KEY_TYPE *n_key_buffer = (KEY_TYPE *)CFF_ARR_NEW(KEY_TYPE, new_capacity, "ARRAY BLOCK");      \
         uint8_t *n_used_buffer = (uint8_t *)CFF_ARR_NEW(uint8_t, new_capacity, "ARRAY BLOCK");        \
@@ -293,7 +292,6 @@
     {                                                                                                 \
         if (hash_ptr->count > hash_ptr->capacity * 0.7)                                               \
         {                                                                                             \
-            printf("sem vaga\n");                                                                     \
             uint32_t new_capacity = hash_ptr->capacity * 2;                                           \
             NAME##_resize(hash_ptr, new_capacity);                                                    \
         }                                                                                             \
@@ -306,7 +304,7 @@
         }                                                                                             \
         hash_ptr->count++;                                                                            \
     }                                                                                                 \
-    int8_t NAME##_get(NAME *m_ptr, KEY_TYPE key, DATA_TYPE *result)                                   \
+    int8_t NAME##_get(const NAME *m_ptr, KEY_TYPE key, DATA_TYPE *result)                             \
     {                                                                                                 \
         uint32_t hash_collision = 0;                                                                  \
         uint32_t hash_index = (m_ptr->hash_key_fn(&key, hash_collision) % m_ptr->capacity);           \
@@ -390,7 +388,7 @@
         }                                                                                             \
         return found;                                                                                 \
     }                                                                                                 \
-    void NAME##_release(NAME *m_ptr)                                                                  \
+    void NAME##_release(const NAME *m_ptr)                                                            \
     {                                                                                                 \
         cff_release(m_ptr->data_buffer);                                                              \
         cff_release(m_ptr->key_buffer);                                                               \

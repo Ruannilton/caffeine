@@ -15,4 +15,5 @@ uint32_t ecs_query_get_count(const ecs_query *const query_ref);
 void ecs_query_release(const ecs_query *const query_owning);
 
 CAFF_API void *ecs_iterator_get_component_data(query_it it, component_id component);
+CAFF_API void *ecs_iterator_get_component_data_by_name(query_it it, const char *const name);
 CAFF_API entity_id *ecs_iterator_get_ids(query_it it);

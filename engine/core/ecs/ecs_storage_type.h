@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ecs_types.h"
+#include "ecs_name_index.h"
 
 struct ecs_storage
 {
@@ -8,6 +9,7 @@ struct ecs_storage
     const component_id *components;
     uint32_t component_count;
 
+    name_index component_name_table;
     uint32_t entity_count;
     uint32_t entity_capacity;
     entity_id *entities;

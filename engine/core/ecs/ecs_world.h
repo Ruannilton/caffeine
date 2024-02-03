@@ -10,6 +10,7 @@ ecs_world *ecs_world_new();
 void ecs_world_release(const ecs_world *const world_owning);
 
 CAFF_API component_id ecs_world_add_component(const ecs_world *const world_ref, const char *name, size_t size, size_t align);
+CAFF_API component_id ecs_world_get_component(const ecs_world *const world_ref, const char *name);
 CAFF_API void ecs_world_remove_component(const ecs_world *const world_ref, component_id id);
 
 CAFF_API archetype_id ecs_world_add_archetype(const ecs_world *const world_ref, ecs_archetype archetype);
@@ -22,4 +23,4 @@ CAFF_API void ecs_world_set_entity_component(const ecs_world *const world_ref, e
 
 CAFF_API void ecs_worl_register_system(const ecs_world *const world_ref, ecs_query *query, ecs_system system);
 
-void ecs_world_step(const ecs_world *const world_ref);
+void ecs_world_step(const ecs_world *const world_ref, double delta_time);

@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include "../../caffeine_types.h"
 
+#define MAX_NAME_LENGHT 128
+
 typedef uint64_t component_id;
 typedef uint64_t archetype_id;
 typedef uint64_t entity_id;
@@ -18,7 +20,7 @@ typedef struct
 
 extern const uint64_t INVALID_ID;
 
-typedef void (*ecs_system)(query_it iterator, uint32_t lenght);
+typedef void (*ecs_system)(query_it iterator, uint32_t lenght, double delta_time);
 
 CAFF_API ecs_archetype ecs_create_archetype(uint32_t len);
 

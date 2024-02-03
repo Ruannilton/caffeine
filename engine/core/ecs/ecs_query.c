@@ -94,3 +94,11 @@ uint32_t ecs_query_get_count(const ecs_query *const query_ref)
 {
     return query_ref->requiriments_count;
 }
+
+CAFF_API void *ecs_iterator_get_component_data_by_name(query_it it, const char *const name)
+{
+    component_id id = ecs_storage_get_component_id(it, name);
+    if (id == INVALID_ID)
+        return NULL;
+    return ecs_iterator_get_component_data(it, id);
+}

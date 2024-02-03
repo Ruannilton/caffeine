@@ -44,7 +44,11 @@
 			"ecs_storage.h": "c",
 			"ecs_storage_type.h": "c",
 			"caffeine_flags.h": "c",
-			"ecs_query.h": "c"
+			"ecs_query.h": "c",
+			"caffeine_input.h": "c",
+			"ecs_component.h": "c",
+			"ecs_name_index.h": "c",
+			"caffeine_defs.h": "c"
 		}
 	}
 }

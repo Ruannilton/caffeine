@@ -455,4 +455,9 @@ LRESULT CALLBACK win32_proccess_message(HWND hwnd, UINT message, WPARAM w_param,
 
   return DefWindowProcA(hwnd, message, w_param, l_param);
 }
+
+void cff_platform_sleep(uint64_t ms)
+{
+  Sleep(ms);
+}
 #endif

@@ -29,8 +29,8 @@ typedef struct
         {
             uint32_t mouse_x;
             uint32_t mouse_y;
-            uint32_t mouse_button;
             uint32_t mouse_scroll;
+            int32_t mouse_button;
         };
 
         struct

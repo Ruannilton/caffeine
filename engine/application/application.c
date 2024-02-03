@@ -7,6 +7,7 @@
 #include "../core/caffeine_memory.h"
 #include "../core/caffeine_events.h"
 #include "../core/caffeine_input.h"
+#include "../core/caffeine_time.h"
 
 typedef struct
 {
@@ -78,6 +79,7 @@ bool caffeine_application_run()
 
     while (_application.is_running)
     {
+
         cff_platform_poll_events();
 
         if (_application.is_paused)
@@ -85,11 +87,11 @@ bool caffeine_application_run()
 
         caff_input_update();
 
-        ecs_world_step(_application.world);
+        ecs_world_step(_application.world, caff_time_delta());
+        caff_time_tick();
     }
 
     caffeine_application_shutdown();
-
     caff_log(LOG_LEVEL_TRACE, "Application down\n");
     return true;
 }

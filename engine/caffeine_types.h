@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "caffeine.h"
+#include "caffeine_defs.h"
 
 /**
  * @typedef cff_size

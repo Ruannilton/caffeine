@@ -6,7 +6,7 @@
 static int _storage_get_component_index(const ecs_storage *const storage, component_id id);
 static void _storage_resize(ecs_storage *const storage, uint32_t capacity);
 
-ecs_storage ecs_storage_new(const component_id *const components_owning, const size_t *const component_sizes_owning, uint32_t components_count)
+ecs_storage ecs_storage_new(const component_id *const components_owning, const size_t *const component_sizes_owning, const char **const names_owning, uint32_t components_count)
 {
 
     ecs_storage storage = (ecs_storage){
@@ -20,12 +20,18 @@ ecs_storage ecs_storage_new(const component_id *const components_owning, const s
     storage.entities = (entity_id *)CFF_ALLOC(sizeof(entity_id) * storage.entity_capacity, "STORAGE");
     storage.entity_data = (void **)CFF_ALLOC(sizeof(void *) * components_count, "STORAGE COMPONENTS");
 
+    name_index *ni = &(storage.component_name_table);
+    ecs_name_index_init(ni);
+
     for (size_t i = 0; i < components_count; i++)
     {
         size_t component_size = component_sizes_owning[i];
         void *buffer = CFF_ALLOC((uint64_t)(component_size * storage.entity_capacity), "STORAGE COMPONENTS ARRAY");
         storage.entity_data[i] = buffer;
+        ecs_name_index_add(ni, names_owning[i], components_owning[i]);
     }
+
+    CFF_RELEASE(names_owning);
 
     storage.entity_count = 0;
     return storage;
@@ -35,6 +41,9 @@ void ecs_storage_release(const ecs_storage *const storage_owning)
 {
     if (storage_owning == NULL)
         return;
+
+    const name_index *ni = &(storage_owning->component_name_table);
+    ecs_name_index_release(ni);
 
     for (size_t i = 0; i < storage_owning->component_count; i++)
     {
@@ -121,6 +130,14 @@ void *ecs_storage_get_component_list(const ecs_storage *const storage_ref, compo
         return storage_ref->entity_data[component_index];
     }
     return NULL;
+}
+
+component_id ecs_storage_get_component_id(const ecs_storage *const storage_ref, const char *const name)
+{
+    const name_index *ni = &(storage_ref->component_name_table);
+    component_id id = INVALID_ID;
+    ecs_name_index_get(ni, name, &id);
+    return id;
 }
 
 entity_id *ecs_storage_get_enetities_ids(const ecs_storage *const storage_ref)

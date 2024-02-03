@@ -137,3 +137,5 @@ uint64_t cff_platform_file_size(void *file);
 const char *cff_get_app_directory();
 
 const char *cff_get_app_data_directory();
+
+void cff_platform_sleep(uint64_t ms);

@@ -11,7 +11,7 @@ struct storage_index
     ecs_storage *storages;
 };
 
-ecs_storage ecs_storage_new(const component_id *const components, const size_t *const component_sizes, uint32_t components_count);
+ecs_storage ecs_storage_new(const component_id *const components, const size_t *const component_sizes, const char **const names_owning, uint32_t components_count);
 void ecs_storage_release(const ecs_storage *const storage);
 
 storage_index *ecs_storage_index_new(uint32_t capacity)
@@ -45,7 +45,13 @@ void ecs_storage_index_release(const storage_index *const index_owning)
     CFF_RELEASE(index_owning);
 }
 
-void ecs_storage_index_new_storage(storage_index *const index_mut_ref, archetype_id arch_id, const component_id *const components_owning, const size_t *const sizes_owning, uint32_t lenght)
+void ecs_storage_index_new_storage(
+    storage_index *const index_mut_ref,
+    archetype_id arch_id,
+    const component_id *const components_owning,
+    const size_t *const sizes_owning,
+    const char **const names_owning,
+    uint32_t lenght)
 {
     if (arch_id > index_mut_ref->capacity)
     {
@@ -69,7 +75,7 @@ void ecs_storage_index_new_storage(storage_index *const index_mut_ref, archetype
         index_mut_ref->capacity = new_capacity;
     }
 
-    index_mut_ref->storages[arch_id] = ecs_storage_new(components_owning, sizes_owning, lenght);
+    index_mut_ref->storages[arch_id] = ecs_storage_new(components_owning, sizes_owning, names_owning, lenght);
     index_mut_ref->used[arch_id] = 1;
     index_mut_ref->count++;
 }
