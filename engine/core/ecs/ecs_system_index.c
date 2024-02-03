@@ -3,7 +3,7 @@
 #include "../ds/caffeine_vector.h"
 #include "../ds/caffeine_hashmap.h"
 #include "ecs_storage_index.h"
-#include "ecs_archetype.h"
+#include "ecs_archetype_index.h"
 #include "ecs_storage.h"
 
 typedef uint32_t query_id;

@@ -48,7 +48,8 @@
 			"caffeine_input.h": "c",
 			"ecs_component.h": "c",
 			"ecs_name_index.h": "c",
-			"caffeine_defs.h": "c"
+			"caffeine_defs.h": "c",
+			"ecs_archetype_index.h": "c"
 		}
 	}
 }

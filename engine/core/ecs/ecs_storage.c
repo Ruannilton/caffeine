@@ -156,6 +156,32 @@ uint32_t ecs_storage_count(const ecs_storage *const storage_ref)
     return 0;
 }
 
+int ecs_storage_move_entity(ecs_storage *const from_storage_ref, ecs_storage *const to_storage_mut_ref, entity_id id, int entity_row)
+{
+    int new_entity_row = ecs_storage_add_entity(to_storage_mut_ref, id);
+    uint32_t component_count = from_storage_ref->component_count;
+    const component_id *components = from_storage_ref->components;
+
+    if (component_count > to_storage_mut_ref->component_count)
+    {
+        component_count = to_storage_mut_ref->component_count;
+        components = to_storage_mut_ref->components;
+    }
+
+    for (size_t i = 0; i < component_count; i++)
+    {
+        void *component_data = ecs_storage_get_component(from_storage_ref, entity_row, components[i]);
+
+        if (component_data != NULL)
+        {
+            ecs_storage_set_component(to_storage_mut_ref, new_entity_row, components[i], component_data);
+        }
+    }
+
+    ecs_storage_remove_entity(from_storage_ref, entity_row);
+    return new_entity_row;
+}
+
 static int _storage_get_component_index(const ecs_storage *const storage_ref, component_id id)
 {
     for (size_t i = 0; i < storage_ref->component_count; i++)

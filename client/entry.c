@@ -28,9 +28,8 @@ void update_position(query_it iterator, uint32_t lenght, double delta_time)
       positions[i].x += speeds[i].x;
       positions[i].y += speeds[i].y;
       positions[i].z += speeds[i].z;
+      caff_log_info("%.8llf, position: %d %d %d\n", delta_time, positions[i].x, positions[i].y, positions[i].z);
     }
-
-    caff_log_info("%.8llf, position: %d %d %d\n", delta_time, positions[0].x, positions[0].y, positions[0].z);
   }
 }
 
@@ -58,13 +57,15 @@ void register_entities(ecs_world *world)
   archetype_id runner_id = ecs_world_add_archetype(world, runner);
   archetype_id ball_id = ecs_world_add_archetype(world, ball);
 
-  entity_id e_runner = ecs_world_create_entity(world, runner_id);
+  // entity_id e_runner = ecs_world_create_entity(world, runner_id);
   entity_id e_ball = ecs_world_create_entity(world, ball_id);
 
   position_component pos = {.x = 5, .y = 7, .z = -1};
   speed_component spd = {.x = 1, .y = 0, .z = -1};
-  ecs_world_set_entity_component(world, e_runner, position_component_id, &pos);
-  ecs_world_set_entity_component(world, e_runner, speed_component_id, &spd);
+  ecs_world_set_entity_component(world, e_ball, position_component_id, &pos);
+
+  ecs_world_add_entity_component(world, e_ball, speed_component_id);
+  ecs_world_set_entity_component(world, e_ball, speed_component_id, &spd);
 }
 
 void register_systems(ecs_world *world)
@@ -85,6 +86,6 @@ void register_systems(ecs_world *world)
 void caffeine_application_setup_world(ecs_world *world)
 {
   register_components(world);
-  register_entities(world);
   register_systems(world);
+  register_entities(world);
 }

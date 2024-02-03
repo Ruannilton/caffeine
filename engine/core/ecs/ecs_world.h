@@ -20,7 +20,8 @@ CAFF_API entity_id ecs_world_create_entity(const ecs_world *const world_ref, arc
 CAFF_API void ecs_world_destroy_entity(const ecs_world *const world_ref, entity_id id);
 CAFF_API void *ecs_world_get_entity_component(const ecs_world *const world_ref, entity_id entity, component_id component);
 CAFF_API void ecs_world_set_entity_component(const ecs_world *const world_ref, entity_id entity, component_id component, void *data);
-
+CAFF_API void ecs_world_add_entity_component(const ecs_world *const world_ref, entity_id entity, component_id component);
+CAFF_API void ecs_world_remove_entity_component(const ecs_world *const world_ref, entity_id entity, component_id component);
 CAFF_API void ecs_worl_register_system(const ecs_world *const world_ref, ecs_query *query, ecs_system system);
 
 void ecs_world_step(const ecs_world *const world_ref, double delta_time);

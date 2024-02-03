@@ -14,4 +14,6 @@ component_id ecs_storage_get_component_id(const ecs_storage *const storage_ref, 
 void *ecs_storage_get_component_list(const ecs_storage *const storage_ref, component_id component);
 entity_id *ecs_storage_get_enetities_ids(const ecs_storage *const storage_ref);
 
+int ecs_storage_move_entity(ecs_storage *const from_storage_ref, ecs_storage *const to_storage_mut_ref, entity_id id, int entity_row);
+
 uint32_t ecs_storage_count(const ecs_storage *const storage_ref);

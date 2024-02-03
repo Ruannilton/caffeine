@@ -38,3 +38,52 @@ void ecs_archetype_add(ecs_archetype *const arch_mut_ref, component_id id)
     arch_mut_ref->components[i + 1] = id;
     arch_mut_ref->count++;
 }
+
+void ecs_archetype_remove(ecs_archetype *const arch_mut_ref, component_id id)
+{
+    uint32_t i = 0;
+    uint32_t found = 0;
+
+    for (i = 0; i < arch_mut_ref->count; i++)
+    {
+        if (arch_mut_ref->components[i] == id)
+        {
+            found = 1;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        return;
+    }
+
+    for (; i < arch_mut_ref->count - 1; i++)
+    {
+        arch_mut_ref->components[i] = arch_mut_ref->components[i + 1];
+    }
+
+        arch_mut_ref->count--;
+
+    if (arch_mut_ref->count < arch_mut_ref->capacity / 2)
+    {
+        arch_mut_ref->components = CFF_ARR_RESIZE(arch_mut_ref->components, arch_mut_ref->capacity / 2);
+        arch_mut_ref->capacity /= 2;
+    }
+}
+
+ecs_archetype ecs_archetype_copy(const ecs_archetype *const arch_ref)
+{
+    ecs_archetype arch = {
+        .components = (component_id *)CFF_ALLOC(arch_ref->capacity * sizeof(component_id), "ARCHETYPE_COPY"),
+        .count = arch_ref->count,
+        .capacity = arch_ref->capacity,
+    };
+
+    for (size_t i = 0; i < arch_ref->count; i++)
+    {
+        arch.components[i] = arch_ref->components[i];
+    }
+
+    return arch;
+}

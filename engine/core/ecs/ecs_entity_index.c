@@ -63,11 +63,15 @@ entity_id ecs_entity_index_new_entity(entity_index *const index_mut_ref)
     return id;
 }
 
-void ecs_entity_index_set_entity(entity_index *const index_mut_ref, entity_id id, int row, ecs_storage *const storage_owning)
+void ecs_entity_index_set_entity(entity_index *const index_mut_ref, entity_id id, archetype_id archetype, int row, ecs_storage *const storage_owning)
 {
     if (id < index_mut_ref->capacity)
     {
-        index_mut_ref->data[id] = (entity_record){.row = row, .storage = storage_owning};
+        index_mut_ref->data[id] = (entity_record){
+            .row = row,
+            .archetype = archetype,
+            .storage = storage_owning,
+        };
     }
 }
 
