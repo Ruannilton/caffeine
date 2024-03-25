@@ -1,6 +1,7 @@
 #include "ecs_archetype_index.h"
 #include <stdbool.h>
 #include "../caffeine_memory.h"
+#include "../caffeine_logging.h"
 #include "../ds/caffeine_vector.h"
 
 #define INVALID_INDEX (uint32_t)(0xffffffff)
@@ -32,7 +33,7 @@ struct archetype_index
 static bool compare_archetype(uint32_t count, const component_id a[], const component_id b[]);
 static uint32_t hash_archetype(uint32_t count, const component_id components[], uint32_t seed);
 static inline uint32_t min(uint32_t a, uint32_t b);
-static archetype_info *get_arch_info(const archetype_index *const index_ref, archetype_id arch_id);
+static archetype_info *get_archetype_info(const archetype_index *const index_ref, archetype_id arch_id);
 static void set_archetype_navigation(archetype_info_arr *info_arr, archetype_id next_archetype, component_id component);
 
 archetype_index *ecs_new_archetype_index(uint32_t capacity)
@@ -40,7 +41,10 @@ archetype_index *ecs_new_archetype_index(uint32_t capacity)
     archetype_index *instance = (archetype_index *)CFF_ALLOC(sizeof(archetype_index), "ARCHETYPE INDEX");
 
     if (instance == NULL)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Creation error: fail to allocate archetype index memory\n");
         return instance;
+    }
 
     instance->capacity = capacity;
     instance->count = 0;
@@ -49,6 +53,7 @@ archetype_index *ecs_new_archetype_index(uint32_t capacity)
 
     if (instance->values == NULL)
     {
+        caff_log_error("[ARCHETYPE INDEX] Creation error: fail to allocate archetype index values memory\n");
         CFF_RELEASE(instance);
         return NULL;
     }
@@ -56,6 +61,7 @@ archetype_index *ecs_new_archetype_index(uint32_t capacity)
     instance->keys = (uint32_t *)CFF_ALLOC(capacity * sizeof(uint32_t), "ARCHETYPE INDEX KEYS");
     if (instance->keys == NULL)
     {
+        caff_log_error("[ARCHETYPE INDEX] Creation error: fail to allocate archetype index keys memory\n");
         CFF_RELEASE(instance->values);
         CFF_RELEASE(instance);
         return NULL;
@@ -64,6 +70,7 @@ archetype_index *ecs_new_archetype_index(uint32_t capacity)
     instance->reverse_keys = (uint32_t *)CFF_ALLOC(capacity * sizeof(uint32_t), "ARCHETYPE INDEX INVERSE KEYS");
     if (instance->reverse_keys == NULL)
     {
+        caff_log_error("[ARCHETYPE INDEX] Creation error: fail to allocate archetype index reverse keys memory\n");
         CFF_RELEASE(instance->keys);
         CFF_RELEASE(instance->values);
         CFF_RELEASE(instance);
@@ -80,7 +87,7 @@ archetype_index *ecs_new_archetype_index(uint32_t capacity)
 
 archetype_id ecs_register_archetype(archetype_index *const index_mut_ref, ecs_archetype archetype_owning)
 {
-    archetype_id id = index_mut_ref->count + 1;
+    archetype_id id = index_mut_ref->count;
 
     uint32_t seed = 71;
     uint32_t hash = hash_archetype(archetype_owning.count, archetype_owning.components, seed) % index_mut_ref->capacity;
@@ -91,7 +98,9 @@ archetype_id ecs_register_archetype(archetype_index *const index_mut_ref, ecs_ar
         archetype_info *info = index_mut_ref->values + index_mut_ref->keys[hash];
         if (compare_archetype(min(info->lenght, archetype_owning.count), info->components, archetype_owning.components))
         {
-            return index_mut_ref->keys[hash];
+            archetype_id existent = index_mut_ref->keys[hash];
+            caff_log_warn("[ARCHETYPE INDEX] Archetype already exists: %" PRIu64 "\n", existent);
+            return existent;
         }
         seed *= 2;
         hash = hash_archetype(archetype_owning.count, archetype_owning.components, seed) % index_mut_ref->capacity;
@@ -116,6 +125,7 @@ archetype_id ecs_register_archetype(archetype_index *const index_mut_ref, ecs_ar
     index_mut_ref->keys[hash] = id;
     index_mut_ref->reverse_keys[id] = hash;
     index_mut_ref->count++;
+    caff_log_trace("[ARCHETYPE INDEX] Archetype registered: %" PRIu64 "\n", id);
     return id;
 }
 
@@ -130,7 +140,9 @@ archetype_id ecs_get_archetype_id(const archetype_index *const index_ref, uint32
         archetype_info *info = index_ref->values + index_ref->keys[hash];
         if (compare_archetype(min(info->lenght, count), info->components, components_ref))
         {
-            return index_ref->keys[hash];
+            archetype_id found = index_ref->keys[hash];
+            caff_log_trace("[ARCHETYPE INDEX] Archetype found: %" PRIu64 "\n", found);
+            return found;
         }
 
         seed *= 2;
@@ -141,12 +153,26 @@ archetype_id ecs_get_archetype_id(const archetype_index *const index_ref, uint32
             break;
     }
 
+    caff_log_warn("[ARCHETYPE INDEX] Archetype not found\n");
     return INVALID_ID;
 }
 
 bool ecs_archetype_has_component(const archetype_index *const index_ref, archetype_id archetype, component_id component)
 {
+    if (archetype >= index_ref->count || archetype == INVALID_ID)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to search component: archetype id is invalid: %" PRIu64 "\n", archetype);
+        return false;
+    }
+
+    if (component == INVALID_ID)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to search component: component id is invalid: %" PRIu64 "\n", archetype);
+        return false;
+    }
+
     archetype_info *info = index_ref->values + archetype;
+
     for (size_t i = 0; i < info->lenght; i++)
     {
         if (info->components[i] == component)
@@ -158,11 +184,11 @@ bool ecs_archetype_has_component(const archetype_index *const index_ref, archety
 
 void ecs_remove_archetype(archetype_index *const index_mut_ref, archetype_id id)
 {
-    if (index_mut_ref->count == 0)
-        return;
-
     if (id >= index_mut_ref->count)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to remove archetype: id is invalid: %" PRIu64 "\n", id);
         return;
+    }
 
     uint32_t hash = index_mut_ref->reverse_keys[id];
     index_mut_ref->keys[hash] = INVALID_INDEX;
@@ -173,98 +199,197 @@ void ecs_remove_archetype(archetype_index *const index_mut_ref, archetype_id id)
         .components = NULL,
     };
     index_mut_ref->count--;
+
+    caff_log_trace("[ARCHETYPE INDEX] Archetype removed, left: %" PRIu32 "\n", index_mut_ref->count);
 }
 
 // fix mem leak
 void ecs_release_archetype_index(const archetype_index *const index_owning)
 {
+    if (index_owning == NULL)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to release archetype index: already null\n");
+        return;
+    }
     for (size_t i = 0; i < index_owning->count; i++)
     {
-        if (index_owning->keys[index_owning->reverse_keys[i]] != INVALID_INDEX)
+        uint32_t reverse_key = index_owning->reverse_keys[i];
+
+        if (reverse_key >= index_owning->capacity)
+            continue;
+
+        if (index_owning->keys[reverse_key] != INVALID_INDEX)
         {
             archetype_info *info = index_owning->values + i;
-            CFF_RELEASE(info->components);
+
+            if (info->components != NULL && info->lenght > 0)
+            {
+                CFF_RELEASE(info->components);
+            }
+
             archetype_info_arr_release(&(info->on_add));
+
             archetype_info_arr_release(&(info->on_remove));
         }
     }
 
-    CFF_RELEASE(index_owning->values);
-    CFF_RELEASE(index_owning->keys);
-    CFF_RELEASE(index_owning->reverse_keys);
+    if (index_owning->values)
+    {
+        CFF_RELEASE(index_owning->values);
+    }
+    if (index_owning->keys)
+    {
+        CFF_RELEASE(index_owning->keys);
+    }
+    if (index_owning->reverse_keys)
+    {
+        CFF_RELEASE(index_owning->reverse_keys);
+    }
 
     CFF_RELEASE(index_owning);
 }
 
 uint32_t ecs_archetype_get_components(const archetype_index *const index_ref, archetype_id id, const component_id **out_mut_ref)
 {
-    if (index_ref->reverse_keys[id] != INVALID_INDEX)
+    if (out_mut_ref == NULL)
     {
-        *out_mut_ref = index_ref->values[id].components;
-        return index_ref->values[id].lenght;
+        caff_log_error("[ARCHETYPE INDEX] Failed to get components: out buffer is null\n");
+        return 0;
     }
 
-    *out_mut_ref = NULL;
-    return 0;
+    if (id >= index_ref->count || index_ref->reverse_keys[id] > index_ref->capacity)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to get components: archetype id is invalid: %" PRIu64 "\n", id);
+        *out_mut_ref = NULL;
+        return 0;
+    }
+
+    *out_mut_ref = index_ref->values[id].components;
+    return index_ref->values[id].lenght;
 }
 
 archetype_id ecs_archetype_add_component(archetype_index *const index_mut_ref, archetype_id origin_arch_id, component_id component)
 {
-    if (origin_arch_id == INVALID_ID || component == INVALID_ID)
+    if (origin_arch_id == INVALID_ID)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to add component to archetype %" PRIu64 ": archetype id is invalid\n", origin_arch_id);
         return INVALID_ID;
+    }
 
-    const archetype_info *origin_arch_info = get_arch_info(index_mut_ref, origin_arch_id);
+    if (component == INVALID_ID)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to add component to archetype %" PRIu64 ": archetype id is invalid\n", origin_arch_id);
+        return INVALID_ID;
+    }
+
+    const archetype_info *origin_arch_info = get_archetype_info(index_mut_ref, origin_arch_id);
 
     if (origin_arch_info == NULL)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to add component to archetype %" PRIu64 ": archetype not found\n", origin_arch_id);
         return INVALID_ID;
+    }
 
-    archetype_id next_arch_id = origin_arch_info->on_add.buffer[component];
+    uint32_t component_index = component_id_index(component);
+    archetype_id next_arch_id = INVALID_ID;
+
+    if (component_index < origin_arch_info->on_add.capacity)
+    {
+        next_arch_id = origin_arch_info->on_add.buffer[component_index];
+    }
 
     if (next_arch_id == INVALID_ID || next_arch_id == 0)
     {
-        ecs_archetype current = {.capacity = origin_arch_info->capacity, .count = origin_arch_info->lenght, .components = origin_arch_info->components};
+        caff_log_trace("[ARCHETYPE INDEX] Target archetype does not exist creating new\n");
+
+        ecs_archetype current = {
+            .capacity = origin_arch_info->capacity,
+            .count = origin_arch_info->lenght,
+            .components = origin_arch_info->components,
+        };
+
         ecs_archetype new_arch = ecs_archetype_copy(&current);
+
         ecs_archetype_add(&new_arch, component);
+
         next_arch_id = ecs_register_archetype(index_mut_ref, new_arch);
 
         if (next_arch_id == INVALID_ID)
+        {
+            caff_log_error("[ARCHETYPE INDEX] Failed to register new archetype while adding component %" PRIu64 " to archetype %" PRIu64 "\n", component, origin_arch_id);
             return INVALID_ID;
+        }
 
-        const archetype_info *next_arch_info = get_arch_info(index_mut_ref, next_arch_id);
+        const archetype_info *next_arch_info = get_archetype_info(index_mut_ref, next_arch_id);
+        if (next_arch_info == NULL)
+        {
+            caff_log_error("[ARCHETYPE INDEX] Failed to get new archetype info for id %" PRIu64 " while adding component %" PRIu64 " to archetype %" PRIu64 "\n", next_arch_id, component, origin_arch_id);
+            return INVALID_ID;
+        }
 
         archetype_info_arr *on_add_navigator = (archetype_info_arr *)&(origin_arch_info->on_add);
+
         archetype_info_arr *on_remove_navigator = (archetype_info_arr *)&(next_arch_info->on_remove);
 
         set_archetype_navigation(on_add_navigator, next_arch_id, component);
         set_archetype_navigation(on_remove_navigator, origin_arch_id, component);
     }
 
+    caff_log_trace("[ARCHETYPE INDEX] Component added to archetype %" PRIu64 ": result id is: %" PRIu64 "\n", origin_arch_id, next_arch_id);
     return next_arch_id;
 }
 
 archetype_id ecs_archetype_remove_component(archetype_index *const index_mut_ref, archetype_id origin_arch_id, component_id component)
 {
-    if (origin_arch_id == INVALID_ID || component == INVALID_ID)
+    if (origin_arch_id == INVALID_ID)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to remove component %" PRIu64 ": archetype id %" PRIu64 " is invalid\n", component, origin_arch_id);
         return INVALID_ID;
+    }
+    if (component == INVALID_ID)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to remove component %" PRIu64 ": id is invalid\n", component);
+        return INVALID_ID;
+    }
 
-    const archetype_info *origin_arch_info = get_arch_info(index_mut_ref, origin_arch_id);
+    const archetype_info *origin_arch_info = get_archetype_info(index_mut_ref, origin_arch_id);
 
     if (origin_arch_info == NULL)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to remove component %" PRIu64 ": archetype info not found\n", component);
         return INVALID_ID;
+    }
 
     archetype_id next_arch_id = origin_arch_info->on_remove.buffer[component];
 
     if (next_arch_id == INVALID_ID)
     {
-        ecs_archetype current = {.capacity = origin_arch_info->capacity, .count = origin_arch_info->lenght, .components = origin_arch_info->components};
+        caff_log_trace("[ARCHETYPE INDEX] Target archetype does not exist creating new\n");
+
+        ecs_archetype current = {
+            .capacity = origin_arch_info->capacity,
+            .count = origin_arch_info->lenght,
+            .components = origin_arch_info->components,
+        };
+
         ecs_archetype new_arch = ecs_archetype_copy(&current);
+
         ecs_archetype_remove(&new_arch, component);
+
         next_arch_id = ecs_register_archetype(index_mut_ref, new_arch);
 
         if (next_arch_id == INVALID_ID)
+        {
+            caff_log_error("[ARCHETYPE INDEX] Failed to register new archetype while removing component %" PRIu64 " from archetype %" PRIu64 "\n", component, origin_arch_id);
             return INVALID_ID;
+        }
 
-        const archetype_info *next_arch_info = get_arch_info(index_mut_ref, next_arch_id);
+        const archetype_info *next_arch_info = get_archetype_info(index_mut_ref, next_arch_id);
+        if (next_arch_info == NULL)
+        {
+            caff_log_error("[ARCHETYPE INDEX] Failed to get new archetype info for id %" PRIu64 " while removing component %" PRIu64 " from archetype %" PRIu64 "\n", next_arch_id, component, origin_arch_id);
+            return INVALID_ID;
+        }
 
         archetype_info_arr *on_remove_navigator = (archetype_info_arr *)&(origin_arch_info->on_remove);
         archetype_info_arr *on_add_navigator = (archetype_info_arr *)&(next_arch_info->on_add);
@@ -273,6 +398,7 @@ archetype_id ecs_archetype_remove_component(archetype_index *const index_mut_ref
         set_archetype_navigation(on_remove_navigator, origin_arch_id, component);
     }
 
+    caff_log_trace("[ARCHETYPE INDEX] Component removed from archetype %" PRIu64 ": result id is: %" PRIu64 "\n", origin_arch_id, next_arch_id);
     return next_arch_id;
 }
 
@@ -284,8 +410,10 @@ static uint32_t hash_archetype(uint32_t count, const component_id *const compone
 
     for (size_t i = 0; i < count; i++)
     {
+        component_id component = components_ref[i];
+        uint32_t id_index = component_id_index(component);
         // Mix the bits of the current integer into the hash value
-        hash_value ^= components_ref[i];
+        hash_value ^= id_index;
         hash_value *= 0x9e3779b1; // A prime number for mixing
     }
 
@@ -309,8 +437,13 @@ static inline uint32_t min(uint32_t a, uint32_t b)
     return b;
 }
 
-static archetype_info *get_arch_info(const archetype_index *const index_ref, archetype_id arch_id)
+static archetype_info *get_archetype_info(const archetype_index *const index_ref, archetype_id arch_id)
 {
+    if (arch_id >= index_ref->count)
+    {
+        caff_log_error("[ARCHETYPE INDEX] Failed to get archetype info with id: %" PRIu64 "\n");
+        return NULL;
+    }
     archetype_info *arch_info = &(index_ref->values[arch_id]);
 
     return arch_info;
@@ -327,7 +460,8 @@ static void set_archetype_navigation(archetype_info_arr *info_arr, archetype_id 
     {
         archetype_info_arr_set(info_arr, 0, i);
     }
-    archetype_info_arr_set(info_arr, next_archetype, component);
+    uint32_t component_index = component_id_index(component);
+    archetype_info_arr_set(info_arr, next_archetype, component_index);
 }
 
 #pragma endregion

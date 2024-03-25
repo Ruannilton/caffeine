@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ecs_component.h"
+#include "ecs_component_index.h"
 
 #include "../ds/caffeine_hashmap.h"
 

@@ -91,7 +91,7 @@ void *cff_mem_alloc_dbg(uint64_t size, const char *const block_name, const char 
 
   void *result = _get_block(debug_result);
 
-  caff_log_trace("[%s:%llu] Alloc %d.%s - %llu bytes\n", file, line, (int)debug_result->id, block_name, size);
+  //  caff_log_trace("[%s:%llu] Alloc %d.%s - %llu bytes\n", file, line, (int)debug_result->id, block_name, size);
 
   return result;
 }
@@ -124,7 +124,7 @@ void cff_mem_release_dbg(const void *const ptr_owning, const char *const file, u
   header->freed = 1;
   _mem_allocked -= header->size;
 
-  caff_log_trace("[%s:%llu] Free %d.%s - %u bytes\n", file, line, (int)header->id, header->block_name, header->size);
+  // caff_log_trace("[%s:%llu] Free %d.%s - %u bytes\n", file, line, (int)header->id, header->block_name, header->size);
 
   cff_mem_release(header);
 }

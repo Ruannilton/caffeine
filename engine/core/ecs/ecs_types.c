@@ -1,5 +1,6 @@
 #include "ecs_types.h"
 #include "../caffeine_memory.h"
+#include "../caffeine_logging.h"
 
 const uint64_t INVALID_ID = (0xffffffff);
 
@@ -13,30 +14,30 @@ ecs_archetype ecs_create_archetype(uint32_t len)
     return arch;
 }
 
-void ecs_archetype_add(ecs_archetype *const arch_mut_ref, component_id id)
+void ecs_archetype_add(ecs_archetype *const archetype_mut_ref, component_id id)
 {
-    for (size_t i = 0; i < arch_mut_ref->count; i++)
+    for (size_t i = 0; i < archetype_mut_ref->count; i++)
     {
-        if (arch_mut_ref->components[i] == id)
+        if (archetype_mut_ref->components[i] == id)
             return;
     }
 
-    if (arch_mut_ref->count == arch_mut_ref->capacity)
+    if (archetype_mut_ref->count == archetype_mut_ref->capacity)
     {
-        arch_mut_ref->components = CFF_ARR_RESIZE(arch_mut_ref->components, arch_mut_ref->capacity * 2);
-        arch_mut_ref->capacity *= 2;
+        archetype_mut_ref->components = CFF_ARR_RESIZE(archetype_mut_ref->components, archetype_mut_ref->capacity * 2);
+        archetype_mut_ref->capacity *= 2;
     }
 
-    int i = arch_mut_ref->count - 1;
+    int i = archetype_mut_ref->count - 1;
 
-    while (i >= 0 && arch_mut_ref->components[i] > id)
+    while (i >= 0 && archetype_mut_ref->components[i] > id)
     {
-        arch_mut_ref->components[i + 1] = arch_mut_ref->components[i];
+        archetype_mut_ref->components[i + 1] = archetype_mut_ref->components[i];
         i--;
     }
 
-    arch_mut_ref->components[i + 1] = id;
-    arch_mut_ref->count++;
+    archetype_mut_ref->components[i + 1] = id;
+    archetype_mut_ref->count++;
 }
 
 void ecs_archetype_remove(ecs_archetype *const arch_mut_ref, component_id id)
@@ -63,7 +64,7 @@ void ecs_archetype_remove(ecs_archetype *const arch_mut_ref, component_id id)
         arch_mut_ref->components[i] = arch_mut_ref->components[i + 1];
     }
 
-        arch_mut_ref->count--;
+    arch_mut_ref->count--;
 
     if (arch_mut_ref->count < arch_mut_ref->capacity / 2)
     {

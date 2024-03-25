@@ -10,7 +10,7 @@
 typedef struct component_index component_index;
 
 component_index *ecs_new_component_index(uint32_t capacity);
-component_id ecs_register_component(component_index *const index_mut_ref, const char *name, size_t size, size_t align);
+component_id ecs_register_component(component_index *const index_mut_ref, const char *name, component_type type, size_t size, size_t align);
 component_id ecs_get_component_id(const component_index *const index_ref, const char *name);
 size_t ecs_get_component_size(const component_index *const index_ref, component_id id);
 size_t ecs_get_component_align(const component_index *const index_ref, component_id id);

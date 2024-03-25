@@ -36,8 +36,10 @@ static uint32_t hash_key_fn(ecs_query **key, uint32_t seed)
 
     for (size_t i = 0; i < count; i++)
     {
+        component_id id = components_ref[i];
+        uint32_t index = component_id_index(id);
         // Mix the bits of the current integer into the hash value
-        hash_value ^= components_ref[i];
+        hash_value ^= index;
         hash_value *= 0x9e3779b1; // A prime number for mixing
     }
 
@@ -79,7 +81,6 @@ struct system_index
 static void query_runner_init(query_runner *runner, ecs_system system, archetype_id *archetypes, uint32_t lenght);
 static void query_runner_release(query_runner *runner);
 static void query_runner_add_arch(query_runner *runner, archetype_id archetype);
-// static void query_runner_rem_arch(query_runner *runner, archetype_id archetype);
 
 system_index *ecs_system_index_new(const storage_index *storage_index, const uint32_t capacity)
 {
@@ -190,13 +191,20 @@ void ecs_system_step(system_index *index, double delta_time)
     {
         query_runner *runner = runner_list_get_ref(&(index->runners), i);
         if (runner == NULL)
+        {
             continue;
+        }
 
         for (size_t j = 0; j < runner->archetypes.count; j++)
         {
             archetype_id arch = archetype_list_get(&(runner->archetypes), j);
             query_it it = ecs_storage_index_get(index->storage_index, arch);
-            runner->system(it, ecs_storage_count(it), delta_time);
+            uint32_t entity_count = ecs_storage_count(it);
+
+            if (entity_count > 0)
+            {
+                runner->system(it, entity_count, delta_time);
+            }
         }
     }
 }

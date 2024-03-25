@@ -11,7 +11,11 @@
         "caffeine_container_type.h": "c",
         "caffeine_container_functions.h": "c",
         "caffeine.h": "c",
-        "cff_allocator.h": "c"
+        "cff_allocator.h": "c",
+        "ecs_archetype_index.h": "c",
+        "caffeine_logging.h": "c",
+        "ecs_name_index.h": "c",
+        "caffeine_hashmap.h": "c"
     },
     "C_Cpp.default.compilerPath": "C:\\Program Files\\LLVM\\bin\\clang.exe",
     "C_Cpp.errorSquiggles": "disabled"

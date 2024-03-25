@@ -10,6 +10,7 @@ ecs_world *ecs_world_new();
 void ecs_world_release(const ecs_world *const world_owning);
 
 CAFF_API component_id ecs_world_add_component(const ecs_world *const world_ref, const char *name, size_t size, size_t align);
+CAFF_API component_id ecs_world_add_tag(const ecs_world *const world_ref, const char *name);
 CAFF_API component_id ecs_world_get_component(const ecs_world *const world_ref, const char *name);
 CAFF_API void ecs_world_remove_component(const ecs_world *const world_ref, component_id id);
 

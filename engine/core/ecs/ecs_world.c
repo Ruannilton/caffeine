@@ -1,13 +1,14 @@
 #include <stdbool.h>
 #include "ecs_world.h"
-#include "ecs_component.h"
-#include "ecs_archetype_index.h"
 #include "ecs_storage.h"
+#include "component_dependency.h"
+#include "ecs_component_index.h"
+#include "ecs_archetype_index.h"
 #include "ecs_storage_index.h"
 #include "ecs_entity_index.h"
-#include "component_dependency.h"
 #include "ecs_system_index.h"
 #include "../caffeine_memory.h"
+#include "../caffeine_logging.h"
 
 struct ecs_world
 {
@@ -29,6 +30,7 @@ ecs_world *ecs_world_new()
 
     if (components_owning == NULL)
     {
+        caff_log_error("[ECS_WORLD] World creation error: fail to init component index\n");
         return NULL;
     }
 
@@ -36,6 +38,7 @@ ecs_world *ecs_world_new()
 
     if (archetypes_owning == NULL)
     {
+        caff_log_error("[ECS_WORLD] World creation error: fail to init archetype index\n");
         ecs_release_component_index(components_owning);
         return NULL;
     }
@@ -44,6 +47,7 @@ ecs_world *ecs_world_new()
 
     if (dependencies_owning == NULL)
     {
+        caff_log_error("[ECS_WORLD] World creation error: fail to init component dependency\n");
         ecs_release_archetype_index(archetypes_owning);
         ecs_release_component_index(components_owning);
         return NULL;
@@ -53,6 +57,7 @@ ecs_world *ecs_world_new()
 
     if (storages_owning == NULL)
     {
+        caff_log_error("[ECS_WORLD] World creation error: fail to init storage index\n");
         ecs_component_dependency_release(dependencies_owning);
         ecs_release_archetype_index(archetypes_owning);
         ecs_release_component_index(components_owning);
@@ -62,6 +67,7 @@ ecs_world *ecs_world_new()
     entity_index *entities_owning = ecs_entity_index_new(64);
     if (entities_owning == NULL)
     {
+        caff_log_error("[ECS_WORLD] World creation error: fail to init entity index\n");
         ecs_storage_index_release(storages_owning);
         ecs_component_dependency_release(dependencies_owning);
         ecs_release_archetype_index(archetypes_owning);
@@ -72,6 +78,7 @@ ecs_world *ecs_world_new()
     system_index *systems_owning = ecs_system_index_new(storages_owning, 64);
     if (systems_owning == NULL)
     {
+        caff_log_error("[ECS_WORLD] World creation error: fail to init system index\n");
         ecs_entity_index_release(entities_owning);
         ecs_storage_index_release(storages_owning);
         ecs_component_dependency_release(dependencies_owning);
@@ -84,6 +91,7 @@ ecs_world *ecs_world_new()
 
     if (world_owning == NULL)
     {
+        caff_log_error("[ECS_WORLD] World creation error: fail to allocate world memory\n");
         ecs_entity_index_release(entities_owning);
         ecs_storage_index_release(storages_owning);
         ecs_component_dependency_release(dependencies_owning);
@@ -129,7 +137,12 @@ component_id ecs_world_get_component(const ecs_world *const world_ref, const cha
 
 component_id ecs_world_add_component(const ecs_world *const world_ref, const char *name, size_t size, size_t align)
 {
-    return ecs_register_component(world_ref->components_owning, name, size, align);
+    return ecs_register_component(world_ref->components_owning, name, COMPONENT_REGULAR, size, align);
+}
+
+component_id ecs_world_add_tag(const ecs_world *const world_ref, const char *name)
+{
+    return ecs_register_component(world_ref->components_owning, name, COMPONENT_TAG, 0, 0);
 }
 
 void ecs_world_remove_component(const ecs_world *const world_ref, component_id id)
@@ -187,6 +200,7 @@ static bool ecs_world_is_archetype_valid(const ecs_world *const world_ref, arche
 static void ecs_world_setup_archetype(const ecs_world *const world_ref, archetype_id archetype_id)
 {
     const archetype_index *const archetype_index = world_ref->archetypes_owning;
+    component_dependency *const dependency_index = world_ref->dependencies_owning;
 
     const component_id *components = NULL;
     uint32_t compoennts_len = ecs_archetype_get_components(archetype_index, archetype_id, &components);
@@ -200,10 +214,10 @@ static void ecs_world_setup_archetype(const ecs_world *const world_ref, archetyp
     for (size_t i = 0; i < compoennts_len; i++)
     {
         component_id component = components[i];
-        ecs_component_dependency_add_dependency(world_ref->dependencies_owning, component, archetype_id);
         components_copy[i] = component;
         component_sizes[i] = ecs_get_component_size(world_ref->components_owning, component);
         component_names[i] = ecs_get_component_name(world_ref->components_owning, component);
+        ecs_component_dependency_add_dependency_for_component(dependency_index, component, archetype_id);
     }
 
     ecs_storage_index_new_storage(world_ref->storages_owning, archetype_id, components_copy, component_sizes, component_names, compoennts_len);
@@ -262,7 +276,7 @@ void ecs_world_add_entity_component(const ecs_world *const world_ref, entity_id 
     int new_row = ecs_storage_move_entity(current_storage, next_storage, entity, record.row);
 
     // update entity on index
-    ecs_entity_index_set_entity(world_ref->entities_owning, entity, new_row, next_archetype, next_storage);
+    ecs_entity_index_set_entity(world_ref->entities_owning, entity, next_archetype, new_row, next_storage);
 }
 
 void ecs_world_remove_entity_component(const ecs_world *const world_ref, entity_id entity, component_id component)

@@ -151,7 +151,7 @@ void cff_platform_shutdown()
 
 bool cff_platform_poll_events()
 {
-  MSG message;
+  MSG message = {0};
   while (PeekMessageA(&message, NULL, 0, 0, PM_REMOVE))
   {
     TranslateMessage(&message);

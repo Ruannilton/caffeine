@@ -26,8 +26,15 @@ ecs_storage ecs_storage_new(const component_id *const components_owning, const s
     for (size_t i = 0; i < components_count; i++)
     {
         size_t component_size = component_sizes_owning[i];
-        void *buffer = CFF_ALLOC((uint64_t)(component_size * storage.entity_capacity), "STORAGE COMPONENTS ARRAY");
-        storage.entity_data[i] = buffer;
+        if (component_size > 0)
+        {
+            void *buffer = CFF_ALLOC((uint64_t)(component_size * storage.entity_capacity), "STORAGE COMPONENTS ARRAY");
+            storage.entity_data[i] = buffer;
+        }
+        else
+        {
+            storage.entity_data[i] = NULL;
+        }
         ecs_name_index_add(ni, names_owning[i], components_owning[i]);
     }
 
@@ -48,7 +55,10 @@ void ecs_storage_release(const ecs_storage *const storage_owning)
     for (size_t i = 0; i < storage_owning->component_count; i++)
     {
         void *buffer = storage_owning->entity_data[i];
-        CFF_RELEASE(buffer);
+        if (buffer != NULL)
+        {
+            CFF_RELEASE(buffer);
+        }
     }
 
     CFF_RELEASE(storage_owning->entity_data);
@@ -90,9 +100,12 @@ entity_id ecs_storage_remove_entity(ecs_storage *const storage_mut_ref, int row)
     for (size_t i = 0; i < storage_mut_ref->component_count; i++)
     {
         size_t component_size = storage_mut_ref->component_sizes[i];
-        void *from = (void *)((uintptr_t)storage_mut_ref->entity_data[i] + (uintptr_t)(component_size * last_entity));
-        void *to = (void *)((uintptr_t)storage_mut_ref->entity_data[i] + (uintptr_t)(component_size * row));
-        CFF_COPY(from, to, component_size);
+        if (component_size > 0)
+        {
+            void *from = (void *)((uintptr_t)storage_mut_ref->entity_data[i] + (uintptr_t)(component_size * last_entity));
+            void *to = (void *)((uintptr_t)storage_mut_ref->entity_data[i] + (uintptr_t)(component_size * row));
+            CFF_COPY(from, to, component_size);
+        }
     }
 
     storage_mut_ref->entity_count--;
@@ -101,6 +114,10 @@ entity_id ecs_storage_remove_entity(ecs_storage *const storage_mut_ref, int row)
 
 void ecs_storage_set_component(ecs_storage *const storage_mut_ref, int row, component_id component, const void *const data)
 {
+    if (component_id_is_tag(component))
+    {
+        return;
+    }
     int component_index = _storage_get_component_index(storage_mut_ref, component);
     if (component_index != -1)
     {
@@ -112,6 +129,10 @@ void ecs_storage_set_component(ecs_storage *const storage_mut_ref, int row, comp
 
 void *ecs_storage_get_component(const ecs_storage *const storage_ref, int row, component_id component)
 {
+    if (component_id_is_tag(component))
+    {
+        return NULL;
+    }
     int component_index = _storage_get_component_index(storage_ref, component);
     if (component_index != -1)
     {
@@ -124,6 +145,10 @@ void *ecs_storage_get_component(const ecs_storage *const storage_ref, int row, c
 
 void *ecs_storage_get_component_list(const ecs_storage *const storage_ref, component_id component)
 {
+    if (component_id_is_tag(component))
+    {
+        return NULL;
+    }
     int component_index = _storage_get_component_index(storage_ref, component);
     if (component_index != -1)
     {
@@ -170,6 +195,9 @@ int ecs_storage_move_entity(ecs_storage *const from_storage_ref, ecs_storage *co
 
     for (size_t i = 0; i < component_count; i++)
     {
+        if (component_id_is_tag(components[i]))
+            continue;
+
         void *component_data = ecs_storage_get_component(from_storage_ref, entity_row, components[i]);
 
         if (component_data != NULL)
@@ -182,6 +210,7 @@ int ecs_storage_move_entity(ecs_storage *const from_storage_ref, ecs_storage *co
     return new_entity_row;
 }
 
+// OPTIMIZE
 static int _storage_get_component_index(const ecs_storage *const storage_ref, component_id id)
 {
     for (size_t i = 0; i < storage_ref->component_count; i++)
@@ -198,9 +227,11 @@ static void _storage_resize(ecs_storage *const storage_mut_ref, uint32_t capacit
     for (size_t i = 0; i < storage_mut_ref->component_count; i++)
     {
         size_t component_size = storage_mut_ref->component_sizes[i];
-        void *ptr = storage_mut_ref->entity_data[i];
-
-        storage_mut_ref->entity_data[i] = CFF_REALLOC(ptr, component_size * capacity);
+        if (component_size > 0)
+        {
+            void *ptr = storage_mut_ref->entity_data[i];
+            storage_mut_ref->entity_data[i] = CFF_REALLOC(ptr, component_size * capacity);
+        }
     }
 
     storage_mut_ref->entity_capacity = capacity;
