@@ -73,6 +73,34 @@ void ecs_archetype_remove(ecs_archetype *const arch_mut_ref, component_id id)
     }
 }
 
+bool ecs_archetype_contains(const ecs_archetype *const arch_ref, component_id id)
+{
+    uint32_t i = 0;
+
+    for (i = 0; i < arch_ref->count; i++)
+    {
+        if (arch_ref->components[i] == id)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ecs_archetype_equals(const ecs_archetype *const arch_ref_a, const ecs_archetype *const arch_ref_b)
+{
+    if (arch_ref_a->count != arch_ref_b->count)
+        return false;
+
+    for (uint32_t i = 0; i < arch_ref_a->count; i++)
+    {
+        if (arch_ref_a->components[i] != arch_ref_b->components[i])
+            return false;
+    }
+
+    return true;
+}
+
 ecs_archetype ecs_archetype_copy(const ecs_archetype *const arch_ref)
 {
     ecs_archetype arch = {

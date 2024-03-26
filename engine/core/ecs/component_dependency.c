@@ -6,8 +6,6 @@
 cff_arr_impl(dependency_list, archetype_id);
 cff_hash_impl(component_dependency, component_id, dependency_list);
 
-// cff_arr_impl(component_dependency, dependency_list);
-
 static uint32_t hash_key_fn(component_id *id_ref, uint32_t seed)
 {
     component_id id = *id_ref;

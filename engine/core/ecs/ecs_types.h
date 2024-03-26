@@ -44,6 +44,8 @@ CAFF_API ecs_archetype ecs_create_archetype(uint32_t len);
 
 CAFF_API void ecs_archetype_add(ecs_archetype *const arch_mut_ref, component_id id);
 CAFF_API void ecs_archetype_remove(ecs_archetype *const arch_mut_ref, component_id id);
+CAFF_API bool ecs_archetype_contains(const ecs_archetype *const arch_ref, component_id id);
+CAFF_API bool ecs_archetype_equals(const ecs_archetype *const arch_ref_a, const ecs_archetype *const arch_ref_b);
 
 ecs_archetype ecs_archetype_copy(const ecs_archetype *const arch_ref);
 
