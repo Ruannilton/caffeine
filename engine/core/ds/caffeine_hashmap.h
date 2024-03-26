@@ -242,7 +242,7 @@
     }                                                                                                 \
     uint32_t NAME##_resolve_collision(NAME *m_ptr, KEY_TYPE key, uint32_t hash_index, DATA_TYPE data) \
     {                                                                                                 \
-        uint32_t hash_collision = 0;                                                                  \
+        uint32_t hash_collision = 1;                                                                  \
         while (m_ptr->used_slot[hash_index])                                                          \
         {                                                                                             \
             KEY_TYPE tmp_key = m_ptr->key_buffer[hash_index];                                         \
@@ -257,7 +257,12 @@
         m_ptr->data_buffer[hash_index] = data;                                                        \
         m_ptr->key_buffer[hash_index] = key;                                                          \
         m_ptr->used_slot[hash_index] = 1;                                                             \
-        return hash_collision;                                                                        \
+        if (hash_collision > m_ptr->colision_count)                                                   \
+        {                                                                                             \
+            m_ptr->colision_count = hash_collision;                                                   \
+        }                                                                                             \
+        m_ptr->count++;                                                                               \
+        return hash_index;                                                                            \
     }                                                                                                 \
                                                                                                       \
     void NAME##_resize(NAME *m_ptr, uint32_t new_capacity)                                            \
@@ -265,19 +270,13 @@
         DATA_TYPE *n_data_buffer = (DATA_TYPE *)CFF_ARR_NEW(DATA_TYPE, new_capacity, "ARRAY BLOCK");  \
         KEY_TYPE *n_key_buffer = (KEY_TYPE *)CFF_ARR_NEW(KEY_TYPE, new_capacity, "ARRAY BLOCK");      \
         uint8_t *n_used_buffer = (uint8_t *)CFF_ARR_NEW(uint8_t, new_capacity, "ARRAY BLOCK");        \
-        uint32_t n_max_collision = 0;                                                                 \
         CFF_ZERO(n_used_buffer, new_capacity * sizeof(uint8_t));                                      \
         for (uint32_t m_i = 0; m_i < m_ptr->count; m_i++)                                             \
         {                                                                                             \
             KEY_TYPE curr_key = m_ptr->key_buffer[m_i];                                               \
             DATA_TYPE curr_data = m_ptr->data_buffer[m_i];                                            \
-            uint32_t hash_collision = 0;                                                              \
-            uint32_t hash_index = m_ptr->hash_key_fn(&curr_key, hash_collision) % new_capacity;       \
-            hash_collision += NAME##_resolve_collision(m_ptr, curr_key, hash_index, curr_data);       \
-            if (hash_collision > n_max_collision)                                                     \
-            {                                                                                         \
-                n_max_collision = hash_collision;                                                     \
-            }                                                                                         \
+            uint32_t hash_index = m_ptr->hash_key_fn(&curr_key, 0) % new_capacity;                    \
+            NAME##_resolve_collision(m_ptr, curr_key, hash_index, curr_data);                         \
         }                                                                                             \
         cff_release(m_ptr->data_buffer);                                                              \
         cff_release(m_ptr->key_buffer);                                                               \
@@ -288,21 +287,15 @@
         m_ptr->capacity = new_capacity;                                                               \
     }                                                                                                 \
                                                                                                       \
-    void NAME##_add(NAME *hash_ptr, KEY_TYPE key, DATA_TYPE data)                                     \
+    uint32_t NAME##_add(NAME *hash_ptr, KEY_TYPE key, DATA_TYPE data)                                 \
     {                                                                                                 \
         if (hash_ptr->count > hash_ptr->capacity * 0.7)                                               \
         {                                                                                             \
             uint32_t new_capacity = hash_ptr->capacity * 2;                                           \
             NAME##_resize(hash_ptr, new_capacity);                                                    \
         }                                                                                             \
-        uint32_t hash_collision = 0;                                                                  \
-        uint32_t hash_index = (hash_ptr->hash_key_fn(&key, hash_collision) % hash_ptr->capacity);     \
-        hash_collision += NAME##_resolve_collision(hash_ptr, key, hash_index, data);                  \
-        if (hash_collision > hash_ptr->colision_count)                                                \
-        {                                                                                             \
-            hash_ptr->colision_count = hash_collision;                                                \
-        }                                                                                             \
-        hash_ptr->count++;                                                                            \
+        uint32_t hash_index = (hash_ptr->hash_key_fn(&key, 0) % hash_ptr->capacity);                  \
+        return NAME##_resolve_collision(hash_ptr, key, hash_index, data);                             \
     }                                                                                                 \
     int8_t NAME##_get(const NAME *m_ptr, KEY_TYPE key, DATA_TYPE *result)                             \
     {                                                                                                 \
