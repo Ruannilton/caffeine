@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../../caffeine_types.h"
 #include "ecs_types.h"
 #include "ecs_query.h"
 

@@ -81,18 +81,20 @@ void register_entities(ecs_world *world)
 
   entity_id e_ball = ecs_world_create_entity(world, ball_id);
   ecs_world_add_entity_component(world, e_ball, team_a_id);
-  position_component pos = {.x = 5, .y = 7, .z = -1};
-  speed_component spd = {.x = 1, .y = 0, .z = -1};
-  ecs_world_set_entity_component(world, e_ball, position_component_id, &pos);
-  ecs_world_add_entity_component(world, e_ball, speed_component_id);
-  ecs_world_set_entity_component(world, e_ball, speed_component_id, &spd);
 
   entity_id e_runner = ecs_world_create_entity(world, runner_id);
   ecs_world_add_entity_component(world, e_runner, team_b_id);
-  position_component pos2 = {.x = 2, .y = 1, .z = -3};
-  speed_component spd2 = {.x = 0, .y = 2, .z = -7};
-  ecs_world_set_entity_component(world, e_runner, position_component_id, &pos2);
-  ecs_world_set_entity_component(world, e_runner, speed_component_id, &spd2);
+
+  // position_component pos = {.x = 5, .y = 7, .z = -1};
+  // speed_component spd = {.x = 1, .y = 0, .z = -1};
+  // ecs_world_set_entity_component(world, e_ball, position_component_id, &pos);
+  // ecs_world_add_entity_component(world, e_ball, speed_component_id);
+  // ecs_world_set_entity_component(world, e_ball, speed_component_id, &spd);
+
+  // position_component pos2 = {.x = 2, .y = 1, .z = -3};
+  // speed_component spd2 = {.x = 0, .y = 2, .z = -7};
+  // ecs_world_set_entity_component(world, e_runner, position_component_id, &pos2);
+  // ecs_world_set_entity_component(world, e_runner, speed_component_id, &spd2);
 }
 
 void register_systems(ecs_world *world)
